@@ -191,12 +191,13 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => {
-                const active = location.pathname === item.url;
+                const active = location.pathname === item.url || location.pathname.startsWith(`${item.url}/`);
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={active}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
                       <NavLink
                         to={item.url}
+                        aria-current={active ? "page" : undefined}
                         className={cn(
                           "flex items-center gap-2",
                           active && "bg-primary/10 text-primary font-medium"
@@ -242,6 +243,8 @@ export function AppSidebar({
                             onSelectSection("speaking");
                             onSelectType(type);
                           }}
+                          title={collapsed ? info.name : undefined}
+                          aria-pressed={isActive}
                           className={cn(
                             "w-full justify-between",
                             isActive && "bg-primary/10 text-primary font-medium"
@@ -295,6 +298,8 @@ export function AppSidebar({
                             onSelectSection("writing");
                             onSelectType(type);
                           }}
+                          title={collapsed ? info.name : undefined}
+                          aria-pressed={isActive}
                           className={cn(
                             "w-full justify-between",
                             isActive && "bg-accent/10 text-accent font-medium"
@@ -347,6 +352,8 @@ export function AppSidebar({
                             onSelectSection("reading");
                             onSelectType(type);
                           }}
+                          title={collapsed ? info.name : undefined}
+                          aria-pressed={isActive}
                           className={cn(
                             "w-full justify-between",
                             isActive && "bg-emerald-500/10 text-emerald-500 font-medium"
@@ -400,6 +407,8 @@ export function AppSidebar({
                             onSelectSection("listening");
                             onSelectType(type);
                           }}
+                          title={collapsed ? info.name : undefined}
+                          aria-pressed={isActive}
                           className={cn(
                             "w-full justify-between",
                             isActive && "bg-blue-500/10 text-blue-500 font-medium"
