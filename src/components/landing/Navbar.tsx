@@ -6,84 +6,86 @@ import { Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+const sectionLinks = [
+  { label: 'Features', href: '/#features' },
+  { label: 'Pricing', href: '/#pricing' },
+];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const closeMenu = () => setIsOpen(false);
 
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50"
+      initial={{ y: -24, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.35 }}
+      aria-label="Main navigation"
+      className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="PedagogistsPTE" className="h-8 w-auto" />
-            <span className="text-xl font-bold text-foreground hidden sm:block">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2.5" aria-label="PedagogistsPTE home">
+            <img src={logo} alt="" className="h-8 w-auto" />
+            <span className="hidden text-base font-semibold tracking-tight text-foreground sm:block">
               PedagogistsPTE
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-              Features
-            </a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-              Pricing
-            </a>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+          <div className="hidden items-center gap-8 md:flex">
+            {sectionLinks.map((item) => (
+              <Link key={item.label} to={item.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                {item.label}
+              </Link>
+            ))}
+            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               Practice
             </Link>
           </div>
 
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
             <ThemeToggle />
             <Button variant="ghost" asChild>
               <Link to="/auth">Sign In</Link>
             </Button>
-            <Button asChild className="shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
+            <Button asChild>
               <Link to="/auth?mode=signup">Get Started</Link>
             </Button>
           </div>
 
-
-          {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-foreground"
-            onClick={() => setIsOpen(!isOpen)}
+            type="button"
+            className="inline-flex size-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            onClick={() => setIsOpen((open) => !open)}
+            aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isOpen}
+            aria-controls="mobile-navigation"
           >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden py-4 border-t border-border/50"
+            id="mobile-navigation"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-1 border-t border-border/60 py-3 md:hidden"
           >
-            <div className="flex flex-col gap-4">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </a>
-              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                Practice
+            {sectionLinks.map((item) => (
+              <Link key={item.label} to={item.href} onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                {item.label}
               </Link>
-              <hr className="border-border/50" />
-              <Button variant="ghost" asChild className="justify-start">
+            ))}
+            <Link to="/dashboard" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              Practice
+            </Link>
+            <div className="mt-2 flex items-center gap-2 border-t border-border/60 pt-3">
+              <ThemeToggle />
+              <Button variant="ghost" asChild className="flex-1" onClick={closeMenu}>
                 <Link to="/auth">Sign In</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="flex-1" onClick={closeMenu}>
                 <Link to="/auth?mode=signup">Get Started</Link>
               </Button>
             </div>

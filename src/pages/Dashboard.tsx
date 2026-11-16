@@ -47,7 +47,6 @@ import {
 import {
   BookOpen,
   History,
-  Menu,
   ListFilter,
   ChevronLeft,
   AlertCircle,
@@ -292,23 +291,19 @@ export default function Dashboard() {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-            <div className="px-4 py-3 flex items-center gap-4">
-              <SidebarTrigger>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SidebarTrigger>
+          <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+            <div className="flex min-h-16 items-center gap-2 px-3 py-2 sm:gap-4 sm:px-5">
+              <SidebarTrigger className="size-9 shrink-0 rounded-md" />
 
-              <Link to="/" className="flex items-center gap-2">
-                <img src={logo} alt="PedagogistsPTE" className="h-8 w-auto" />
-                <span className="text-lg font-bold text-foreground hidden sm:block">
+              <Link to="/" className="hidden shrink-0 items-center gap-2 lg:flex">
+                <img src={logo} alt="PedagogistsPTE" className="h-7 w-auto" />
+                <span className="text-sm font-semibold tracking-tight text-foreground">
                   PedagogistsPTE
                 </span>
               </Link>
 
               {/* View Toggle */}
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex min-w-0 items-center gap-1">
                 <Button
                   variant={currentView === 'overview' ? 'default' : 'ghost'}
                   size="sm"
@@ -332,7 +327,7 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              <div className="ml-auto flex items-center gap-4">
+              <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-3">
                 {currentTier !== 'free' && (
                   <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
                     <Crown className="w-3 h-3 mr-1" />
@@ -371,21 +366,21 @@ export default function Dashboard() {
                 )}
 
                 <CreditsBadge />
-                <span className="text-sm text-muted-foreground hidden sm:block">
+                <span className="hidden max-w-40 truncate text-sm text-muted-foreground xl:block">
                   {user.email}
                 </span>
-                <Button variant="ghost" size="icon">
-                  <Settings className="w-5 h-5" />
+                <Button variant="ghost" size="icon" aria-label="Settings" className="hidden sm:inline-flex">
+                  <Settings className="size-5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                  <LogOut className="w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                  <LogOut className="size-5" />
                 </Button>
               </div>
             </div>
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-4 overflow-auto">
+          <main className="flex-1 overflow-auto p-4 sm:p-6 xl:p-8">
             {currentView === 'overview' && !selectedType ? (
               // Analytics Dashboard View
               <div className="max-w-6xl mx-auto space-y-6">
@@ -397,11 +392,11 @@ export default function Dashboard() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Welcome back, {user.user_metadata?.display_name || user.email?.split('@')[0]} 👋
+                      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                        Welcome back, {user.user_metadata?.display_name || user.email?.split('@')[0]}
                       </h1>
-                      <p className="text-muted-foreground">
-                        Continue your PTE practice journey. You're doing great!
+                      <p className="text-sm text-muted-foreground sm:text-base">
+                        Continue your PTE practice journey and track your progress.
                       </p>
                     </div>
                     <div className="flex gap-3 flex-wrap">
