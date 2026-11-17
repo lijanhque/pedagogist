@@ -36,7 +36,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         quantity: 1,
       }],
       ...(existing?.stripe_customer_id ? { customer: existing.stripe_customer_id } : {}),
-      ...(existing?.stripe_customer_id ? {} : { customer_creation: "always" as const }),
       client_reference_id: userId,
       metadata: { user_id: userId, plan: plan as string },
       subscription_data: { metadata: { user_id: userId, plan: plan as string } },
