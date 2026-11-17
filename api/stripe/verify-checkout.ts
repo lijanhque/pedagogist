@@ -1,5 +1,5 @@
-import type { ApiRequest, ApiResponse } from "../../src/server/stripe-billing";
-import { getAdminClient, getUserId, getStripe, readJsonBody, sendError, tierForPlan } from "../../src/server/stripe-billing";
+import type { ApiRequest, ApiResponse } from "../../src/server/stripe-billing.js";
+import { getAdminClient, getUserId, getStripe, readJsonBody, sendError, tierForPlan } from "../../src/server/stripe-billing.js";
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== "POST") return sendError(res, 405, "Method not allowed");
