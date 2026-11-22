@@ -1,0 +1,34 @@
+{
+  "speaking": [
+    { "type": "read-aloud", "count": 420, "builtInCount": 420 },
+    { "type": "repeat-sentence", "count": 350, "builtInCount": 350 },
+    { "type": "describe-image", "count": 349, "builtInCount": 349 },
+    { "type": "retell-lecture", "count": 349, "builtInCount": 349 },
+    { "type": "answer-short-question", "count": 349, "builtInCount": 349 },
+    { "type": "summarize-group-discussion", "count": 319, "builtInCount": 319 },
+    { "type": "respond-to-situation", "count": 319, "builtInCount": 319 }
+  ],
+  "writing": [
+    { "type": "summarize-written-text", "count": 9, "builtInCount": 9 },
+    { "type": "write-essay", "count": 9, "builtInCount": 9 },
+    { "type": "summarize-written-text-core", "count": 6, "builtInCount": 6 },
+    { "type": "write-email", "count": 9, "builtInCount": 9 }
+  ],
+  "reading": [
+    { "type": "mc-single", "count": 3, "builtInCount": 3 },
+    { "type": "mc-multiple", "count": 2, "builtInCount": 2 },
+    { "type": "reorder-paragraphs", "count": 2, "builtInCount": 2 },
+    { "type": "fill-blanks-drag", "count": 2, "builtInCount": 2 },
+    { "type": "fill-blanks-dropdown", "count": 2, "builtInCount": 2 }
+  ],
+  "listening": [
+    { "type": "highlight-correct-summary", "count": 2, "builtInCount": 2 },
+    { "type": "mc-single-listening", "count": 2, "builtInCount": 2 },
+    { "type": "mc-multiple-listening", "count": 1, "builtInCount": 1 },
+    { "type": "fill-blanks-listening", "count": 1, "builtInCount": 1 },
+    { "type": "highlight-incorrect-words", "count": 2, "builtInCount": 2 },
+    { "type": "write-from-dictation", "count": 3, "builtInCount": 3 },
+    { "type": "select-missing-word", "count": 1, "builtInCount": 1 },
+    { "type": "summarize-spoken-text", "count": 1, "builtInCount": 1 }
+  ]
+}
