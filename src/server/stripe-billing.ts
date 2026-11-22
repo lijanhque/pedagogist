@@ -9,7 +9,7 @@ export type ApiResponse = ServerResponse & {
 };
 
 export function getStripe() {
-  const secretKey = process.env.STRIPE_SECRET_KEY_STRIPE_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY;
+  const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
   if (!secretKey) throw new Error("Stripe is not configured");
   return new Stripe(secretKey);
 }
@@ -60,8 +60,8 @@ export function readJsonBody(req: ApiRequest): Record<string, unknown> {
 }
 
 export const PLAN_CATALOG = {
-  pro: { tier: "basic" as const, name: "PedagogistsPTE Pro", amount: 2900, credits: 50 },
-  premium: { tier: "premium" as const, name: "PedagogistsPTE Premium", amount: 4900, credits: 200 },
+  pro: { tier: "pro" as const, name: "PedagogistsPTE Pro", amount: 1000, durationDays: 15 },
+  vip: { tier: "vip" as const, name: "PedagogistsPTE VIP", amount: 3000, durationDays: 30 },
 };
 
 export function tierForPlan(plan: string) {

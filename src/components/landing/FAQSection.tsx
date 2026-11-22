@@ -22,11 +22,11 @@ const faqs = [
   },
   {
     q: "What pricing plans do you offer?",
-    a: "Free plan includes 10 AI scoring credits/day. Basic ($29/mo) gives 50/day. Premium ($49/mo) gives 200/day plus priority scoring. Enterprise ($99/mo) is unlimited with 1-on-1 coaching. All plans include the full question bank and mock tests.",
+    a: "Free includes 10 AI scoring credits and one free full mock test. Pro is a one-time $10 purchase for 15 days of unlimited AI scoring and mock tests. VIP is a one-time $30 purchase for 30 days, including live professional teacher support. Packs do not auto-renew; after the access period your account returns to Free.",
   },
   {
     q: "Do you support Bangladeshi students with BDT pricing?",
-    a: "Prices are billed in USD through Stripe. You can securely manage or cancel your subscription from the billing page.",
+    a: "Prices are listed in USD. Stripe shows a local BDT equivalent at checkout when available for your location and payment method.",
   },
   {
     q: "Is my data and audio safe?",

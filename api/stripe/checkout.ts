@@ -25,20 +25,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       .maybeSingle();
     const origin = getOrigin(req);
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: "payment",
+      adaptive_pricing: { enabled: true },
       line_items: [{
         price_data: {
           currency: "usd",
           unit_amount: selectedPlan.amount,
-          recurring: { interval: "month" },
           product_data: { name: selectedPlan.name },
         },
         quantity: 1,
       }],
-      ...(existing?.stripe_customer_id ? { customer: existing.stripe_customer_id } : {}),
+      ...(existing?.stripe_customer_id
+        ? { customer: existing.stripe_customer_id }
+        : { customer_creation: "always" as const }),
       client_reference_id: userId,
       metadata: { user_id: userId, plan: plan as string },
-      subscription_data: { metadata: { user_id: userId, plan: plan as string } },
+      payment_intent_data: { metadata: { user_id: userId, plan: plan as string } },
       success_url: `${origin}/billing?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/billing?checkout=cancelled`,
       allow_promotion_codes: true,

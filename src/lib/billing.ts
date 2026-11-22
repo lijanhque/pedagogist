@@ -18,7 +18,7 @@ async function billingRequest<T>(path: string, body: Record<string, unknown>): P
   return result as T;
 }
 
-export async function createCheckout(plan: "pro" | "premium") {
+export async function createCheckout(plan: "pro" | "vip") {
   return billingRequest<{ url: string }>("/api/stripe/checkout", { plan });
 }
 

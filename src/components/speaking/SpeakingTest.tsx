@@ -37,7 +37,13 @@ interface SpeakingTestProps {
 type Phase = "listen" | "prep" | "recording" | "ready-to-submit" | "submitting" | "submitted" | "scoring" | "results";
 
 // Test types that require listening to audio first
-const AUDIO_FIRST_TYPES = ["repeat-sentence", "retell-lecture", "answer-short-question", "summarize-spoken-text"];
+const AUDIO_FIRST_TYPES = [
+  "repeat-sentence",
+  "retell-lecture",
+  "answer-short-question",
+  "summarize-group-discussion",
+  "respond-to-situation",
+];
 
 export function SpeakingTest({ 
   question, 
@@ -57,12 +63,19 @@ export function SpeakingTest({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { credits, refresh: refreshCredits, optimisticallySpendOne } = useCredits();
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
+  const playbackStartedRef = useRef(false);
+  const autoPlayStartedRef = useRef(false);
   
-  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useTextToSpeech();
+  const {
+    speak,
+    stop: stopSpeaking,
+    isSpeaking,
+    isSupported: ttsSupported,
+    elapsedSeconds,
+    durationSeconds,
+    progress: audioProgress,
+  } = useTextToSpeech();
   const { 
     isRecording, 
     recordingTime, 
@@ -84,7 +97,14 @@ export function SpeakingTest({
 
   // Determine if this question type needs TTS first
   const needsAudioFirst = AUDIO_FIRST_TYPES.includes(question.type);
-  const textToSpeak = question.content.text || question.content.lectureContent || question.content.question || "";
+  const isGroupDiscussion = question.type === "summarize-group-discussion";
+  const textToSpeak =
+    question.content.text ||
+    question.content.lectureContent ||
+    question.content.question ||
+    question.content.discussionContent ||
+    question.content.situationContext ||
+    "";
 
   // Initialize phase based on question type
   useEffect(() => {
@@ -96,6 +116,9 @@ export function SpeakingTest({
     }
     setScore(null);
     setSpokenText("");
+    setHasPlayedAudio(false);
+    playbackStartedRef.current = false;
+    autoPlayStartedRef.current = false;
     setShowScoreModal(false);
     setResponseId(null);
     setSubmittedAudioPath(null);
@@ -105,17 +128,22 @@ export function SpeakingTest({
 
   // Start TTS for audio-first questions
   useEffect(() => {
-    if (phase === "listen" && ttsSupported && textToSpeak && !isSpeaking) {
+    if (phase === "listen" && ttsSupported && textToSpeak && !isSpeaking && !autoPlayStartedRef.current) {
       const timer = setTimeout(() => {
+        if (isGroupDiscussion && hasPlayedAudio) return;
+        autoPlayStartedRef.current = true;
+        if (isGroupDiscussion) setHasPlayedAudio(true);
         speak(textToSpeak);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase]);
+  }, [hasPlayedAudio, isGroupDiscussion, isSpeaking, phase, speak, textToSpeak, ttsSupported]);
 
   // Transition from listen to prep when TTS ends
   useEffect(() => {
-    if (phase === "listen" && !isSpeaking && prepTime === 0) {
+    if (isSpeaking && phase === "listen") playbackStartedRef.current = true;
+    if (phase === "listen" && playbackStartedRef.current && !isSpeaking) {
+      playbackStartedRef.current = false;
       setPhase("prep");
       setPrepTime(question.prepTime);
     }
@@ -180,7 +208,7 @@ export function SpeakingTest({
         responseId,
         testType: question.type,
         spokenText,
-        originalText: question.content.text,
+        originalText: question.content.text || question.content.discussionContent || question.content.situationContext,
         imageDescription: question.content.imageDescription,
         lectureContent: question.content.lectureContent,
         question: question.content.question,
@@ -209,6 +237,9 @@ export function SpeakingTest({
   const handleRetry = () => {
     setScore(null);
     setSpokenText("");
+    setHasPlayedAudio(false);
+    playbackStartedRef.current = false;
+    autoPlayStartedRef.current = false;
     setPrepTime(question.prepTime);
     setShowScoreModal(false);
     setResponseId(null);
@@ -223,7 +254,8 @@ export function SpeakingTest({
   };
 
   const handlePlayAgain = () => {
-    if (textToSpeak) {
+    if (textToSpeak && !(isGroupDiscussion && hasPlayedAudio)) {
+      if (isGroupDiscussion) setHasPlayedAudio(true);
       speak(textToSpeak);
     }
   };
@@ -306,20 +338,36 @@ export function SpeakingTest({
               size="icon" 
               className="h-12 w-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={isSpeaking ? stopSpeaking : handlePlayAgain}
+              disabled={isGroupDiscussion && hasPlayedAudio && !isSpeaking}
             >
               {isSpeaking ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
             
             <div className="flex-1">
+              {isGroupDiscussion && (
+                <p className="mb-1 text-xs text-muted-foreground">
+                  {isSpeaking ? "Playing discussion audio..." : hasPlayedAudio ? "Discussion audio played" : "Discussion audio plays once"}
+                </p>
+              )}
+              {question.type === "respond-to-situation" && (
+                <p className="mb-1 text-xs text-muted-foreground">
+                  {isSpeaking ? "Playing situation audio..." : "Listen to the situation"}
+                </p>
+              )}
               <Slider 
-                value={[isSpeaking ? 50 : 0]} 
+                value={[audioProgress]}
                 max={100}
                 className="w-full"
+                disabled
               />
             </div>
             
             <span className="text-sm text-muted-foreground min-w-[80px]">
-              00:03 / 01:35
+              {formatTime(elapsedSeconds)} / {
+                durationSeconds > 0
+                  ? `${audioProgress >= 100 ? "" : "~"}${formatTime(durationSeconds)}`
+                  : "--:--"
+              }
             </span>
             
             <div className="flex items-center gap-2">
@@ -338,6 +386,20 @@ export function SpeakingTest({
         {/* Show text for read-aloud and describe-image */}
         {question.content.text && !AUDIO_FIRST_TYPES.includes(question.type) && phase !== "results" && (
           <p className="text-lg leading-relaxed">{question.content.text}</p>
+        )}
+
+        {isGroupDiscussion && !ttsSupported && phase !== "results" && (
+          <div className="space-y-2">
+            <p className="font-medium">Discussion transcript</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed">{question.content.discussionContent}</p>
+          </div>
+        )}
+
+        {question.type === "respond-to-situation" && question.content.situationContext && phase !== "results" && (
+          <div className="space-y-2">
+            <p className="font-medium">Situation</p>
+            <p className="text-lg leading-relaxed">{question.content.situationContext}</p>
+          </div>
         )}
         
         {/* Show question for answer-short-question after listening */}
@@ -375,9 +437,11 @@ export function SpeakingTest({
               barCount={40}
             />
             
-            <Button variant="outline" onClick={handleSkipAudio}>
-              Skip to Preparation
-            </Button>
+            {!isGroupDiscussion && (
+              <Button variant="outline" onClick={handleSkipAudio}>
+                Skip to Preparation
+              </Button>
+            )}
           </div>
         )}
 
@@ -468,7 +532,7 @@ export function SpeakingTest({
             <ScoreDisplay 
               score={score} 
               spokenText={spokenText}
-              originalText={question.content.text}
+              originalText={question.content.text || question.content.discussionContent || question.content.situationContext}
               audioUrl={audioUrl || undefined}
             />
             
@@ -536,7 +600,7 @@ export function SpeakingTest({
         <ScoreDisplay 
           score={score}
           spokenText={spokenText}
-          originalText={question.content.text}
+          originalText={question.content.text || question.content.discussionContent || question.content.situationContext}
           audioUrl={audioUrl || undefined}
           isModal
           onClose={() => setShowScoreModal(false)}

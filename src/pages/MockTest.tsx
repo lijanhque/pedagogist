@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,8 @@ import { MockTestSection } from "@/components/mocktest/MockTestSection";
 import { MockTestCertificate } from "@/components/mocktest/MockTestCertificate";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useCredits } from "@/hooks/useCredits";
+import { mockTestsList } from "@/data/mockTestsBank";
 
 // PTE Test Structure (2 hours 19 minutes = 139 minutes total)
 const TEST_SECTIONS = [
@@ -39,6 +41,8 @@ const TEST_SECTIONS = [
       { type: "describe-image", count: 3, timePerQ: 40 },
       { type: "retell-lecture", count: 2, timePerQ: 40 },
       { type: "answer-short-question", count: 5, timePerQ: 10 },
+      { type: "summarize-group-discussion", count: 2, timePerQ: 130 },
+      { type: "respond-to-situation", count: 2, timePerQ: 50 },
       { type: "summarize-written-text", count: 1, timePerQ: 600 },
       { type: "write-essay", count: 1, timePerQ: 1200 },
     ]
@@ -93,7 +97,11 @@ type TestPhase = "intro" | "testing" | "break" | "completed";
 
 export default function MockTest() {
   const { user, loading } = useAuth();
+  const { tier, loading: creditsLoading } = useCredits();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedTest = mockTestsList.find((test) => test.id === searchParams.get("id"));
+  const requiresPack = selectedTest?.type === "premium";
   
   const [phase, setPhase] = useState<TestPhase>("intro");
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -109,6 +117,13 @@ export default function MockTest() {
   const [finalScores, setFinalScores] = useState<any>(null);
   
   const questionStartTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!loading && !creditsLoading && requiresPack && tier === "free") {
+      toast.info("This mock test is included with Pro and VIP packs.");
+      navigate("/billing", { replace: true });
+    }
+  }, [creditsLoading, loading, navigate, requiresPack, tier]);
 
   // Generate test questions on mount
   useEffect(() => {

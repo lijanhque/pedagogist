@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function CreditsBadge() {
   const { credits, tier, loading } = useCredits();
-  const isPaid = tier !== "free";
+  const isPaid = tier === "pro" || tier === "vip";
 
   return (
     <Popover>
@@ -16,7 +16,7 @@ export function CreditsBadge() {
           aria-label="Scoring credits"
         >
           <Zap className="h-3.5 w-3.5 fill-current" />
-          <span className="tabular-nums">{loading ? "…" : `${credits}x`}</span>
+          <span className="tabular-nums">{loading ? "…" : isPaid ? "∞" : `${credits}x`}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
@@ -37,8 +37,8 @@ export function CreditsBadge() {
             )}
           </div>
           <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-2xl font-bold tabular-nums">{loading ? "…" : credits}</p>
-            <p className="text-xs text-muted-foreground">credits remaining</p>
+            <p className="text-2xl font-bold tabular-nums">{loading ? "…" : isPaid ? "Unlimited" : credits}</p>
+            <p className="text-xs text-muted-foreground">AI scoring access</p>
           </div>
           <Button asChild size="sm" className="w-full">
             <Link to="/#pricing">Upgrade for more</Link>

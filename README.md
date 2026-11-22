@@ -60,6 +60,16 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Practice question bank
+
+The practice bank is built into the app. It keeps the existing question arrays and adds generated content until each of Speaking, Writing, Reading, and Listening has 1,250 questions. Listening scripts use browser text-to-speech, and Describe Image questions include original generated SVG charts.
+
+Regenerate the checked-in question modules after changing the distribution or generator:
+
+```sh
+npm run generate:practice-questions
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.

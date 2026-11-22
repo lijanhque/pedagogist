@@ -14,9 +14,7 @@ interface ScoringRequest {
     | "repeat-sentence"
     | "describe-image"
     | "retell-lecture"
-    | "answer-short-question"
-    | "summarize-spoken-text"
-    | "read-and-retell";
+    | "answer-short-question";
   originalText?: string;
   spokenText?: string;
   responseId: string;
@@ -50,8 +48,6 @@ const PTE_WEIGHTS = {
   "describe-image": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
   "retell-lecture": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
   "answer-short-question": { content: 0.8, fluency: 0.1, pronunciation: 0.1 },
-  "summarize-spoken-text": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
-  "read-and-retell": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
   "summarize-group-discussion": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
   "respond-to-situation": { content: 0.5, fluency: 0.25, pronunciation: 0.25 },
 };
@@ -382,64 +378,28 @@ Focus on how well the student captured the essence of the lecture.`;
 Accept synonyms and equivalent expressions.`;
         break;
 
-      case "summarize-spoken-text":
-        userPrompt = `## SUMMARIZE SPOKEN TEXT EVALUATION
+      case "summarize-group-discussion":
+        userPrompt = `## SUMMARIZE GROUP DISCUSSION EVALUATION
 
-### ORIGINAL CONTENT:
-"${lectureContent}"
+### ORIGINAL DISCUSSION:
+"${originalText}"
 
 ### STUDENT'S SPOKEN SUMMARY:
 "${spokenText}"
 
-### PTE SCORING CRITERIA:
-
-1. **CONTENT SCORING**
-   - Main points identified (45 points)
-   - Accurate representation (25 points)
-   - Appropriate length 50-70 words equivalent in speech (20 points)
-
-2. **FLUENCY SCORING**
-   - Cohesive summary structure
-   - Natural transitions
-   - Appropriate speaking pace
-   - No excessive pausing
-
-3. **PRONUNCIATION SCORING**
-   - Clear articulation throughout
-   - Technical terms pronounced correctly
-   - Natural speech patterns
-
-Evaluate summary quality and speaking competence.`;
+Evaluate whether the student accurately captures the central ideas, the different speakers' perspectives, and the important points of agreement or disagreement. Assess content, fluency, and pronunciation on the existing 0-90 scale.`;
         break;
 
-      case "read-and-retell":
-        userPrompt = `## READ AND RETELL EVALUATION
+      case "respond-to-situation":
+        userPrompt = `## RESPOND TO SITUATION EVALUATION
 
-### ORIGINAL TEXT:
+### SITUATION:
 "${originalText}"
 
-### STUDENT'S RETELLING:
+### STUDENT'S RESPONSE:
 "${spokenText}"
 
-### PTE SCORING METHODOLOGY:
-
-1. **CONTENT SCORING**
-   - Key information covered (40 points)
-   - Accurate representation of facts (30 points)
-   - Paraphrasing quality (not verbatim) (20 points)
-
-2. **FLUENCY SCORING**
-   - 40 seconds of connected speech
-   - Natural flow and rhythm
-   - Appropriate discourse markers
-   - Minimal hesitations
-
-3. **PRONUNCIATION SCORING**
-   - Clear pronunciation of content words
-   - Appropriate emphasis
-   - Natural intonation
-
-Evaluate understanding and oral communication skills.`;
+Evaluate whether the response addresses the situation clearly and appropriately, uses a suitable tone, and demonstrates relevant oral communication. Assess content, fluency, and pronunciation on the existing 0-90 scale.`;
         break;
     }
 

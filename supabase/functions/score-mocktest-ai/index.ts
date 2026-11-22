@@ -15,6 +15,8 @@ type QuestionType =
   | "describe-image"
   | "retell-lecture"
   | "answer-short-question"
+  | "summarize-group-discussion"
+  | "respond-to-situation"
   | "summarize-written-text"
   | "write-essay"
   | "mc-single"
@@ -98,6 +100,8 @@ const MAX_SCORES: Record<QuestionType, number> = {
   "describe-image": 15,
   "retell-lecture": 16,
   "answer-short-question": 1,
+  "summarize-group-discussion": 16,
+  "respond-to-situation": 90,
   "summarize-written-text": 12,
   "write-essay": 26,
   "mc-single": 1,
@@ -265,7 +269,15 @@ serve(async (req) => {
 });
 
 function isSpeakingQuestion(type: QuestionType): boolean {
-  return ["read-aloud", "repeat-sentence", "describe-image", "retell-lecture", "answer-short-question"].includes(type);
+  return [
+    "read-aloud",
+    "repeat-sentence",
+    "describe-image",
+    "retell-lecture",
+    "answer-short-question",
+    "summarize-group-discussion",
+    "respond-to-situation",
+  ].includes(type);
 }
 
 function isWritingQuestion(type: QuestionType): boolean {
@@ -283,6 +295,10 @@ async function scoreSpeaking(
   maxScore: number
 ): Promise<DetailedFeedback> {
   const { questionType, spokenText, originalText } = request;
+  const isGroupDiscussion = questionType === "summarize-group-discussion";
+  const contentMax = isGroupDiscussion ? 6 : 90;
+  const fluencyMax = isGroupDiscussion ? 5 : 90;
+  const pronunciationMax = isGroupDiscussion ? 5 : 90;
 
   if (!spokenText) {
     return createEmptyFeedback(maxScore, "No spoken text provided");
@@ -291,23 +307,23 @@ async function scoreSpeaking(
   const systemPrompt = `You are an expert PTE Academic Speaking evaluator specializing in pronunciation analysis and fluency assessment.
 Analyze the spoken response and provide detailed, actionable feedback.
 
-SCORING CRITERIA (each scored 0-90):
-- PRONUNCIATION: Phoneme accuracy, word stress, intonation patterns, connected speech
-- FLUENCY: Speech rate, pauses, hesitations, rhythm, smoothness
-- CONTENT: Accuracy, completeness, relevance to the prompt
+SCORING CRITERIA:
+- PRONUNCIATION: Score from 0 to ${pronunciationMax}; assess phoneme accuracy, word stress, intonation patterns, and connected speech.
+- ORAL FLUENCY: Score from 0 to ${fluencyMax}; assess speech rate, pauses, hesitations, rhythm, and smoothness.
+- CONTENT: Score from 0 to ${contentMax}; assess accuracy, completeness, and relevance to the prompt.
 
 For pronunciation, identify specific words or sounds that were mispronounced and provide IPA transcription where helpful.
 For fluency, note any unnatural pauses, hesitations, or pace issues.
 
 Return a valid JSON object with this EXACT structure:
 {
-  "pronunciationScore": <0-90>,
+  "pronunciationScore": <0-${pronunciationMax}>,
   "pronunciationIssues": ["issue1", "issue2"],
   "pronunciationSuggestions": ["suggestion1", "suggestion2"],
-  "fluencyScore": <0-90>,
+  "fluencyScore": <0-${fluencyMax}>,
   "fluencyIssues": ["issue1", "issue2"],
   "fluencySuggestions": ["suggestion1", "suggestion2"],
-  "contentScore": <0-90>,
+  "contentScore": <0-${contentMax}>,
   "contentIssues": ["issue1", "issue2"],
   "contentSuggestions": ["suggestion1", "suggestion2"],
   "strengths": ["strength1", "strength2"],
@@ -353,6 +369,20 @@ Evaluate the spoken response for:
 - Content organization and completeness
 - Vocabulary usage`;
       break;
+    case "summarize-group-discussion":
+userPrompt = `SUMMARIZE GROUP DISCUSSION ASSESSMENT:
+Discussion: "${originalText}"
+Student's spoken summary: "${spokenText}"
+
+Evaluate whether the student accurately summarizes the main ideas, the speakers' perspectives, and the discussion's important agreements or differences. Do not require minor details that are not central. Also assess pronunciation and oral fluency.`;
+break;
+    case "respond-to-situation":
+userPrompt = `RESPOND TO SITUATION ASSESSMENT:
+Situation: "${originalText}"
+Student's response: "${spokenText}"
+
+Evaluate whether the response addresses the situation appropriately, communicates a clear and relevant message, and uses a suitable tone. Also assess pronunciation and oral fluency.`;
+break;
     default:
       userPrompt = `SPEAKING ASSESSMENT:
 Expected Answer: "${originalText || "Open response"}"
@@ -366,30 +396,38 @@ Evaluate pronunciation, fluency, and content accuracy.`;
     const parsed = parseJsonResponse(aiResponse);
     
     // Calculate total score from components
-    const pronunciationScore = normalizeScore(parsed.pronunciationScore || 50, 90);
-    const fluencyScore = normalizeScore(parsed.fluencyScore || 50, 90);
-    const contentScore = normalizeScore(parsed.contentScore || 50, 90);
+    const normalizeCriterion = (value: unknown, maximum: number) => {
+      const score = Number(value);
+      return Number.isFinite(score)
+        ? Math.round(Math.min(maximum, Math.max(0, score)))
+        : Math.round(maximum / 2);
+    };
+    const pronunciationScore = normalizeCriterion(parsed.pronunciationScore, pronunciationMax);
+    const fluencyScore = normalizeCriterion(parsed.fluencyScore, fluencyMax);
+    const contentScore = normalizeCriterion(parsed.contentScore, contentMax);
     
-    const totalScore = Math.round(
-      (pronunciationScore * 0.35 + fluencyScore * 0.3 + contentScore * 0.35) * maxScore / 90
-    );
+    const totalScore = isGroupDiscussion
+      ? pronunciationScore + fluencyScore + contentScore
+      : Math.round(
+          (pronunciationScore * 0.35 + fluencyScore * 0.3 + contentScore * 0.35) * maxScore / 90
+        );
 
     return {
       totalScore: Math.min(totalScore, maxScore),
       maxScore,
       percentage: Math.round((totalScore / maxScore) * 100),
       pronunciation: {
-        score: Math.round(pronunciationScore),
+        score: pronunciationScore,
         issues: parsed.pronunciationIssues || [],
         suggestions: parsed.pronunciationSuggestions || [],
       },
       fluency: {
-        score: Math.round(fluencyScore),
+        score: fluencyScore,
         issues: parsed.fluencyIssues || [],
         suggestions: parsed.fluencySuggestions || [],
       },
       content: {
-        score: Math.round(contentScore),
+        score: contentScore,
         issues: parsed.contentIssues || [],
         suggestions: parsed.contentSuggestions || [],
       },

@@ -34,10 +34,11 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { speakingQuestions, TestType, getTestTypeInfo } from "@/data/speakingQuestions";
-import { writingQuestions, WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
-import { readingQuestions, ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
-import { listeningQuestions, ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { TestType, getTestTypeInfo } from "@/data/speakingQuestions";
+import { WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
+import { ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
+import { ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { getPracticeQuestionCount } from "@/lib/practiceQuestionBank";
 import logo from "@/assets/logo.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -63,8 +64,6 @@ const speakingTestTypes: TestType[] = [
   "describe-image",
   "retell-lecture",
   "answer-short-question",
-  "summarize-spoken-text",
-  "read-and-retell",
   "summarize-group-discussion",
   "respond-to-situation",
 ];
@@ -103,7 +102,6 @@ const getIconForTestType = (type: AllTestTypes) => {
     "retell-lecture": <Mic className="h-4 w-4" />,
     "answer-short-question": <HelpCircle className="h-4 w-4" />,
     "summarize-spoken-text": <FileText className="h-4 w-4" />,
-    "read-and-retell": <BookOpen className="h-4 w-4" />,
     "summarize-group-discussion": <Users className="h-4 w-4" />,
     "respond-to-situation": <MessageSquare className="h-4 w-4" />,
     "summarize-written-text": <FileText className="h-4 w-4" />,
@@ -141,15 +139,6 @@ export function AppSidebar({
   const [writingOpen, setWritingOpen] = useState(selectedSection === "writing");
   const [readingOpen, setReadingOpen] = useState(selectedSection === "reading");
   const [listeningOpen, setListeningOpen] = useState(selectedSection === "listening");
-
-  const getSpeakingCount = (type: TestType) =>
-    speakingQuestions.filter((q) => q.type === type).length;
-  const getWritingCount = (type: WritingTestType) =>
-    writingQuestions.filter((q) => q.type === type).length;
-  const getReadingCount = (type: ReadingTestType) =>
-    readingQuestions.filter((q) => q.type === type).length;
-  const getListeningCount = (type: ListeningTestType) =>
-    listeningQuestions.filter((q) => q.type === type).length;
 
   const mainNav = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -233,7 +222,7 @@ export function AppSidebar({
                 <SidebarMenu>
                   {speakingTestTypes.map((type) => {
                     const info = getTestTypeInfo(type);
-                    const count = getSpeakingCount(type);
+                    const count = getPracticeQuestionCount("speaking", type);
                     const isActive = selectedSection === "speaking" && selectedType === type;
 
                     return (
@@ -288,7 +277,7 @@ export function AppSidebar({
                 <SidebarMenu>
                   {writingTestTypes.map((type) => {
                     const info = getWritingTestTypeInfo(type);
-                    const count = getWritingCount(type);
+                    const count = getPracticeQuestionCount("writing", type);
                     const isActive = selectedSection === "writing" && selectedType === type;
 
                     return (
@@ -342,7 +331,7 @@ export function AppSidebar({
                 <SidebarMenu>
                   {readingTestTypes.map((type) => {
                     const info = getReadingTestTypeInfo(type);
-                    const count = getReadingCount(type);
+                    const count = getPracticeQuestionCount("reading", type);
                     const isActive = selectedSection === "reading" && selectedType === type;
 
                     return (
@@ -397,7 +386,7 @@ export function AppSidebar({
                 <SidebarMenu>
                   {listeningTestTypes.map((type) => {
                     const info = getListeningTestTypeInfo(type);
-                    const count = getListeningCount(type);
+                    const count = getPracticeQuestionCount("listening", type);
                     const isActive = selectedSection === "listening" && selectedType === type;
 
                     return (

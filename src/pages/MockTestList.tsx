@@ -27,16 +27,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { mockTestsList, sectionTests, questionTests, MockTestInfo } from "@/data/mockTestsBank";
+import { useCredits } from "@/hooks/useCredits";
 import logo from "@/assets/logo.png";
 
 export default function MockTestList() {
   const { user, signOut } = useAuth();
+  const { tier } = useCredits();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"full" | "section" | "question">("full");
   const [testTypeTab, setTestTypeTab] = useState<"academic" | "core">("academic");
 
-  const handleStartTest = (testId: string) => {
-    navigate(`/mock-test?id=${testId}`);
+  const handleStartTest = (test: MockTestInfo) => {
+    if (test.type === "premium" && tier === "free") {
+      navigate("/billing");
+      return;
+    }
+    navigate(`/mock-test?id=${test.id}`);
   };
 
   const handleSignOut = async () => {
@@ -70,7 +76,7 @@ export default function MockTestList() {
           "p-4 cursor-pointer transition-all duration-200 border-border/50 hover:border-primary/30 hover:shadow-md",
           "bg-card hover:bg-accent/5"
         )}
-        onClick={() => handleStartTest(test.id)}
+        onClick={() => handleStartTest(test)}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -82,7 +88,7 @@ export default function MockTestList() {
               ) : (
                 <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                   <Crown className="h-3 w-3 mr-1" />
-                  VIP
+                  Pro & VIP
                 </Badge>
               )}
               {test.isNew && (
@@ -148,8 +154,8 @@ export default function MockTestList() {
               <p className="font-medium text-foreground truncate">
                 {user?.email?.split("@")[0] || "User"}
               </p>
-              <Badge variant="secondary" className="text-xs">
-                Free Plan
+              <Badge variant="secondary" className="text-xs capitalize">
+              {tier} Plan
               </Badge>
             </div>
           </div>
@@ -371,15 +377,15 @@ export default function MockTestList() {
             <div className="flex items-center gap-3">
               <Star className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium text-foreground">Upgrade to VIP</p>
+                <p className="font-medium text-foreground">{tier === "free" ? "Unlock the full mock-test library" : `${tier.toUpperCase()} access is active`}</p>
                 <p className="text-sm text-muted-foreground">
-                  Access all mock tests and premium features
+                  {tier === "free" ? "Pro and VIP packs unlock every mock test" : "Your pack includes unlimited mock tests"}
                 </p>
               </div>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+            <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => navigate("/billing")}>
               <Crown className="h-4 w-4 mr-2" />
-              Upgrade Now
+              {tier === "free" ? "View Plans" : "Extend Access"}
             </Button>
           </div>
         </div>

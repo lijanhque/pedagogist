@@ -32,7 +32,9 @@ export function AiScoreConfirmationDialog({
           </AlertDialogTitle>
           <AlertDialogDescription className="text-center">
             {hasCredits
-              ? `You have ${credits} ${credits === 1 ? "credit" : "credits"}. This score uses 1 credit.`
+              ? credits === Number.POSITIVE_INFINITY
+                ? "You have unlimited AI scoring during your active pack."
+                : `You have ${credits} ${credits === 1 ? "credit" : "credits"}. This score uses 1 credit.`
               : "Upgrade your plan to get more AI score checks."}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -46,7 +48,7 @@ export function AiScoreConfirmationDialog({
                 onConfirm();
               }}
             >
-              Use 1 credit to get score
+              {credits === Number.POSITIVE_INFINITY ? "Get AI score" : "Use 1 credit to get score"}
             </AlertDialogAction>
           ) : (
             <Button asChild>
