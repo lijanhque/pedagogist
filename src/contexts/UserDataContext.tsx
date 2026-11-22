@@ -26,8 +26,10 @@ interface SubscriptionRow {
   daily_credits_used: number | null;
   status?: string | null;
   current_period_end?: string | null;
+  current_period_start?: string | null;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  stripe_checkout_session_id?: string | null;
   cancel_at_period_end?: boolean;
 }
 
@@ -144,7 +146,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const [progressRes, subRes, attemptsRes, allAttemptsRes, writingRes] = await Promise.all([
         supabase.from("user_progress").select("*").eq("user_id", user.id),
         supabase.from("subscriptions")
-          .select("tier, credits_remaining, daily_credits_used, status, current_period_end, stripe_customer_id, stripe_subscription_id, cancel_at_period_end")
+          .select("tier, credits_remaining, daily_credits_used, status, current_period_start, current_period_end, stripe_customer_id, stripe_subscription_id, stripe_checkout_session_id, cancel_at_period_end")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase

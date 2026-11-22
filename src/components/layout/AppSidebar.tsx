@@ -52,10 +52,10 @@ type SectionType = "speaking" | "writing" | "reading" | "listening";
 type AllTestTypes = TestType | WritingTestType | ReadingTestType | ListeningTestType;
 
 interface AppSidebarProps {
-  selectedSection: SectionType;
-  selectedType: AllTestTypes | null;
-  onSelectSection: (section: SectionType) => void;
-  onSelectType: (type: AllTestTypes) => void;
+  selectedSection?: SectionType | null;
+  selectedType?: AllTestTypes | null;
+  onSelectSection?: (section: SectionType) => void;
+  onSelectType?: (type: AllTestTypes) => void;
 }
 
 const speakingTestTypes: TestType[] = [
@@ -227,11 +227,11 @@ export function AppSidebar({
 
                     return (
                       <SidebarMenuItem key={type}>
-                        <SidebarMenuButton
-                          onClick={() => {
-                            onSelectSection("speaking");
-                            onSelectType(type);
-                          }}
+                          <SidebarMenuButton
+                            onClick={() => {
+                              onSelectSection?.("speaking");
+                              onSelectType?.(type);
+                            }}
                           title={collapsed ? info.name : undefined}
                           aria-pressed={isActive}
                           className={cn(

@@ -1,5 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface BillingReceipt {
+  session_id: string;
+  created_at: string;
+  plan?: string | null;
+  tier?: string | null;
+  amount?: number | null;
+  currency?: string | null;
+  status?: string | null;
+  customer_email?: string | null;
+}
+
 async function billingRequest<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Please sign in to manage billing.");
@@ -14,7 +25,7 @@ async function billingRequest<T>(path: string, body: Record<string, unknown>): P
     body: JSON.stringify(body),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "Billing request failed.");
+  if (!response.ok) throw new Error((result as { error?: string }).error || "Billing request failed.");
   return result as T;
 }
 
@@ -28,4 +39,18 @@ export async function verifyCheckout(sessionId: string) {
 
 export async function createBillingPortal() {
   return billingRequest<{ url: string }>("/api/stripe/portal", {});
+}
+
+export async function fetchReceipts(): Promise<BillingReceipt[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Please sign in to view purchase history.");
+
+  const response = await fetch("/api/stripe/receipts", {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((result as { error?: string }).error || "Failed to load purchase history.");
+  return (result as { receipts?: BillingReceipt[] }).receipts ?? [];
 }
