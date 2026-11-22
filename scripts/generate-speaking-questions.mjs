@@ -867,10 +867,10 @@ function buildDescribeImage() {
   const out = [];
   let i = 1;
   const push = (desc, difficulty) => {
-    const seed = (i * 9301 + 49297) % 233280;
-    const w = 600 + (seed % 400);
-    const h = 400 + ((seed >> 3) % 300);
-    out.push({ id: `di-${i}`, type: "describe-image", title: "Describe Image", instruction: TYPES["describe-image"].instruction, prepTime: 25, recordTime: 40, difficulty, content: { imageUrl: `https://images.unsplash.com/photo-${1500000000000 + i}?w=${w}&h=${h}&fit=crop`, imageDescription: desc } });
+    const seed = i * 7919;
+    const w = 600 + (i % 4) * 100;
+    const h = 400 + (i % 3) * 50;
+    out.push({ id: `di-${i}`, type: "describe-image", title: "Describe Image", instruction: TYPES["describe-image"].instruction, prepTime: 25, recordTime: 40, difficulty, content: { imageUrl: `https://picsum.photos/seed/di${seed}/${w}/${h}`, imageDescription: desc } });
     i++;
   };
 
