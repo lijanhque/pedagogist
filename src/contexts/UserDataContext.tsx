@@ -22,11 +22,12 @@ interface SpeakingAttemptRow {
 
 interface SubscriptionRow {
   tier: string;
-  credits_remaining: number;
-  daily_credits_used: number;
+  credits_remaining: number | null;
+  daily_credits_used: number | null;
   status?: string | null;
   current_period_end?: string | null;
   stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
   cancel_at_period_end?: boolean;
 }
 
@@ -142,7 +143,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
       const [progressRes, subRes, attemptsRes, allAttemptsRes, writingRes] = await Promise.all([
         supabase.from("user_progress").select("*").eq("user_id", user.id),
-        supabase.from("subscriptions").select("tier").eq("user_id", user.id).maybeSingle(),
+        supabase.from("subscriptions")
+          .select("tier, credits_remaining, daily_credits_used, status, current_period_end, stripe_customer_id, stripe_subscription_id, cancel_at_period_end")
+          .eq("user_id", user.id)
+          .maybeSingle(),
         supabase
           .from("speaking_attempts")
           .select("created_at, overall_score, pronunciation_score, fluency_score, content_score, test_type")

@@ -12,10 +12,12 @@ import { ReadingTest } from "@/components/reading/ReadingTest";
 import { ListeningTest } from "@/components/listening/ListeningTest";
 import { HistoryPanel } from "@/components/speaking/HistoryPanel";
 import { StudyPlanner } from "@/components/dashboard/StudyPlanner";
-import { speakingQuestions, TestType, getTestTypeInfo } from "@/data/speakingQuestions";
-import { writingQuestions, WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
-import { readingQuestions, ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
-import { listeningQuestions, ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { PracticeQuestionBankStatus } from "@/components/practice/PracticeQuestionBankStatus";
+import { TestType, getTestTypeInfo } from "@/data/speakingQuestions";
+import { WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
+import { ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
+import { ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { usePracticeQuestionBank } from "@/lib/practiceQuestionBank";
 import { useUserHistory } from "@/hooks/useUserHistory";
 import { useScoringLimit } from "@/hooks/useScoringLimit";
 import { useAuth } from "@/hooks/useAuth";
@@ -142,6 +144,13 @@ export default function Dashboard() {
   const [isQuestionPanelOpen, setIsQuestionPanelOpen] = useState(false);
   const { saveAttempt } = useUserHistory();
   const { remainingAttempts, canScore } = useScoringLimit();
+  const {
+    questions: currentQuestions,
+    loading: currentQuestionsLoading,
+    error: currentQuestionsError,
+    warning: currentQuestionsWarning,
+    retry: retryQuestions,
+  } = usePracticeQuestionBank(selectedSection, selectedType);
 
   const tier = subscription?.tier ?? "free";
   const FREE_QUESTION_LIMIT = 2;
@@ -158,16 +167,6 @@ export default function Dashboard() {
     }
   }, [user, loading, navigate, showToast]);
 
-
-  const currentQuestions = selectedType
-    ? selectedSection === "speaking"
-      ? speakingQuestions.filter((q) => q.type === selectedType)
-      : selectedSection === "writing"
-      ? writingQuestions.filter((q) => q.type === selectedType)
-      : selectedSection === "reading"
-      ? readingQuestions.filter((q) => q.type === selectedType)
-      : listeningQuestions.filter((q) => q.type === selectedType)
-    : [];
 
   const currentQuestion = currentQuestions[currentQuestionIndex];
   const isCurrentLocked = isFree && currentQuestionIndex >= FREE_QUESTION_LIMIT;
@@ -701,10 +700,25 @@ export default function Dashboard() {
                   <HistoryPanel />
                 </TabsContent>
               </Tabs>
+            ) : selectedType && (currentQuestionsLoading || currentQuestionsError || currentQuestions.length === 0) ? (
+              <PracticeQuestionBankStatus
+                loading={currentQuestionsLoading}
+                error={currentQuestionsError}
+                warning={currentQuestionsWarning}
+                questionCount={currentQuestions.length}
+                onRetry={retryQuestions}
+              />
             ) : (
               // Active Test View
               <div className="flex gap-4 h-full max-w-4xl mx-auto">
                 <div className="flex-1 w-full">
+                  <PracticeQuestionBankStatus
+                    loading={false}
+                    error={null}
+                    warning={currentQuestionsWarning}
+                    questionCount={currentQuestions.length}
+                    onRetry={retryQuestions}
+                  />
                   {/* Back button and header */}
                   <div className="mb-4">
                     <div className="flex items-center gap-3 flex-wrap">

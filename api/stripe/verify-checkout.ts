@@ -9,44 +9,37 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (!userId) return sendError(res, 401, "Sign in to verify your purchase");
 
     const { sessionId } = readJsonBody(req);
-    if (typeof sessionId !== "string" || !/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
+    if (typeof sessionId !== "string" || !/^cs_(test|live)_[A-Za-z0-9_-]+$/.test(sessionId)) {
       return sendError(res, 400, "Invalid checkout session");
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (session.client_reference_id !== userId || session.metadata?.user_id !== userId) {
       return sendError(res, 403, "This checkout session belongs to another account");
     }
-    if (session.status !== "complete" || session.mode !== "subscription") {
+    if (
+      session.status !== "complete"
+      || session.mode !== "payment"
+      || !["paid", "no_payment_required"].includes(session.payment_status)
+    ) {
       return sendError(res, 409, "Checkout has not been completed");
-    }
-
-    const subscription = typeof session.subscription === "string"
-      ? await stripe.subscriptions.retrieve(session.subscription)
-      : session.subscription;
-    if (!subscription || !["active", "trialing"].includes(subscription.status)) {
-      return sendError(res, 409, "Your subscription is not active yet");
     }
 
     const plan = tierForPlan(session.metadata?.plan ?? "");
     const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-    if (!plan || !customerId) return sendError(res, 400, "Checkout subscription details are incomplete");
+    if (!plan || !customerId) return sendError(res, 400, "Checkout payment details are incomplete");
 
     const admin = getAdminClient();
-    const { error } = await admin.from("subscriptions").upsert({
-      user_id: userId,
-      tier: plan.tier,
-      status: subscription.status,
-      credits_remaining: plan.credits,
-      daily_credits_used: 0,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscription.id,
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    const { data: activated, error } = await admin.rpc("activate_paid_pack", {
+      p_user_id: userId,
+      p_session_id: session.id,
+      p_tier: plan.tier,
+      p_customer_id: customerId,
+      p_duration_days: plan.durationDays,
+    });
     if (error) throw error;
 
-    return res.status(200).json({ verified: true, tier: plan.tier, status: subscription.status });
+    return res.status(200).json({ verified: activated === true, tier: plan.tier, status: "active" });
   } catch (error) {
     console.error("Stripe checkout verification failed", error);
     return sendError(res, 500, "Unable to verify the checkout session");

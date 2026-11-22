@@ -11,7 +11,8 @@ const corsHeaders = {
 const TIER_CONFIG = {
   free: { dailyCredits: 10, creditsRemaining: 10 },
   basic: { dailyCredits: 50, creditsRemaining: 100 },
-  premium: { dailyCredits: 200, creditsRemaining: 500 },
+  pro: { dailyCredits: 0, creditsRemaining: 0 },
+  vip: { dailyCredits: 0, creditsRemaining: 0 },
   enterprise: { dailyCredits: 1000, creditsRemaining: 2000 },
 };
 
@@ -105,13 +106,14 @@ serve(async (req) => {
 
 async function handleSuccessfulCheckout(supabase: any, checkoutData: any) {
   const userId = checkoutData.metadata?.user_id;
-  const tier = checkoutData.metadata?.tier;
+  const legacyTier = checkoutData.metadata?.tier;
 
-  if (!userId || !tier) {
+  if (!userId || !legacyTier) {
     console.error("[POLAR WEBHOOK] Missing metadata in checkout");
     return;
   }
 
+  const tier = legacyTier === "premium" ? "pro" : legacyTier;
   console.log(`[POLAR WEBHOOK] Processing successful checkout for user ${userId}, tier: ${tier}`);
 
   const config = TIER_CONFIG[tier as keyof typeof TIER_CONFIG] || TIER_CONFIG.free;

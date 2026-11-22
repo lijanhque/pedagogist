@@ -48,7 +48,15 @@ export function ListeningTest({
   const [audioPlayed, setAudioPlayed] = useState(0);
   const [hasListened, setHasListened] = useState(false);
   
-  const { speak, stop: stopSpeaking, isSpeaking, isSupported } = useTextToSpeech();
+  const {
+    speak,
+    stop: stopSpeaking,
+    isSpeaking,
+    isSupported,
+    elapsedSeconds,
+    durationSeconds,
+    progress: audioProgress,
+  } = useTextToSpeech();
   const typeInfo = getListeningTestTypeInfo(question.type);
 
   // Reset state when question changes
@@ -372,11 +380,20 @@ export function ListeningTest({
           
           <div className="flex-1">
             <Slider 
-              value={[isSpeaking ? 50 : 0]} 
+              value={[audioProgress]}
               max={100}
               className="w-full"
               disabled
             />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{formatTime(elapsedSeconds)}</span>
+              <span>
+                {durationSeconds > 0
+                  ? `${audioProgress >= 100 ? "" : "~"}${formatTime(durationSeconds)}`
+                  : "--:--"}
+                {audioProgress >= 100 ? "" : " estimated"}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-2">

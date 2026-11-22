@@ -9,7 +9,8 @@ import { Check, Sparkles } from 'lucide-react';
 type Tier = {
   name: string;
   price: string;
-  period?: string;
+  period: string;
+  description: string;
   highlight?: boolean;
   features: string[];
   cta: string;
@@ -19,44 +20,43 @@ const TIERS: Tier[] = [
   {
     name: 'Free',
     price: '$0',
-    period: '/forever',
+    period: 'forever',
+    description: 'Try the platform at your own pace',
     features: [
-      '1 Free Mock Test',
-      'Limited Practice Questions',
-      '10 AI Scoring Credits/Day',
-      'Basic Test History',
-      '2 Section Tests per Type',
+      '10 AI scoring credits',
+      'One free full mock test',
+      'Core practice questions',
     ],
     cta: 'Get Started',
   },
   {
     name: 'Pro',
-    price: '$29',
-    period: '/mo',
+    price: '$10',
+    period: '15 days',
+    description: 'Focused, unlimited practice for two weeks',
     highlight: true,
     features: [
-      'All 200 Mock Tests',
-      'Unlimited Practice',
       'Unlimited AI Scoring',
+      'Unlimited mock tests',
+      'Full practice question bank',
       'Full Test History',
       'Detailed Analytics',
-      'Priority Support',
     ],
-    cta: 'Start Pro Trial',
+    cta: 'Choose Pro',
   },
   {
-    name: 'Premium',
-    price: '$49',
-    period: '/mo',
+    name: 'VIP',
+    price: '$30',
+    period: '30 days',
+    description: 'Complete preparation with live teacher support',
     features: [
-      'Everything in Pro',
-      'Priority AI Scoring',
-      'Personalized Study Plans',
-      'Teacher Review Access',
-      '1-on-1 Coaching Sessions',
-      'Score Guarantee',
+      'Unlimited AI scoring',
+      'Unlimited mock tests',
+      'Full practice question bank',
+      'Full test history and analytics',
+      'Live professional teacher support',
     ],
-    cta: 'Go Premium',
+    cta: 'Choose VIP',
   },
 ];
 
@@ -88,7 +88,7 @@ export function PricingSection() {
             </span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free. Upgrade anytime. Cancel whenever you want.
+            Pick the access period that works for you. Paid packs are one-time purchases and never auto-renew.
           </p>
         </motion.div>
 
@@ -121,15 +121,9 @@ export function PricingSection() {
                   <CardTitle className="text-2xl font-bold text-foreground">{tier.name}</CardTitle>
                   <div className="mt-4">
                     <span className="text-5xl font-black text-foreground">{tier.price}</span>
-                    {tier.period && (
-                      <span className="text-muted-foreground text-lg">{tier.period}</span>
-                    )}
+                    <span className="ml-2 text-muted-foreground text-lg">{tier.period}</span>
                   </div>
-                  <CardDescription className="mt-2">
-                    {tier.name === 'Free' && 'Perfect to get started'}
-                    {tier.name === 'Pro' && 'Best for serious learners'}
-                    {tier.name === 'Premium' && 'For guaranteed results'}
-                  </CardDescription>
+                  <CardDescription className="mt-2">{tier.description}</CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
@@ -160,6 +154,9 @@ export function PricingSection() {
             </motion.div>
           ))}
         </div>
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          Checkout is securely handled by Stripe. Stripe shows a local BDT equivalent when available.
+        </p>
       </div>
     </section>
   );

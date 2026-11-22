@@ -75,7 +75,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   for (const key of [
     "STRIPE_SECRET_KEY",
-    "STRIPE_SECRET_KEY_STRIPE_SECRET_KEY",
     "SUPABASE_URL",
     "VITE_SUPABASE_URL",
     "SUPABASE_ANON_KEY",
@@ -83,9 +82,6 @@ export default defineConfig(({ mode }) => {
     "SUPABASE_SERVICE_ROLE_KEY",
   ]) {
     if (!process.env[key] && env[key]) process.env[key] = env[key];
-  }
-  if (!process.env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY_STRIPE_SECRET_KEY) {
-    process.env.STRIPE_SECRET_KEY = env.STRIPE_SECRET_KEY_STRIPE_SECRET_KEY;
   }
 
   return {

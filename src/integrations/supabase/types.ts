@@ -224,56 +224,89 @@ export type Database = {
       questions: {
         Row: {
           audio_url: string | null
+          audio_play_limit: number | null
           correct_answer: Json | null
           created_at: string | null
+          content: Json
           difficulty: string | null
           discussion_transcript: Json | null
           id: string
           image_url: string | null
           is_human_reviewed: boolean | null
+          is_practice_bank: boolean
           max_score: number
+          max_words: number | null
+          min_words: number | null
           options: Json | null
           prompt: string
           question_type: Database["public"]["Enums"]["question_type"]
+          prep_time: number | null
+          record_time: number | null
           reference_text: string | null
+          section: string | null
           situation_context: string | null
           tags: string[] | null
+          time_limit: number | null
+          title: string | null
+          instruction: string | null
           usage_count: number | null
         }
         Insert: {
           audio_url?: string | null
+          audio_play_limit?: number | null
           correct_answer?: Json | null
           created_at?: string | null
+          content?: Json
           difficulty?: string | null
           discussion_transcript?: Json | null
           id?: string
           image_url?: string | null
           is_human_reviewed?: boolean | null
+          is_practice_bank?: boolean
           max_score: number
+          max_words?: number | null
+          min_words?: number | null
           options?: Json | null
           prompt: string
           question_type: Database["public"]["Enums"]["question_type"]
+          prep_time?: number | null
+          record_time?: number | null
           reference_text?: string | null
+          section?: string | null
           situation_context?: string | null
           tags?: string[] | null
+          time_limit?: number | null
+          title?: string | null
+          instruction?: string | null
           usage_count?: number | null
         }
         Update: {
           audio_url?: string | null
+          audio_play_limit?: number | null
           correct_answer?: Json | null
           created_at?: string | null
+          content?: Json
           difficulty?: string | null
           discussion_transcript?: Json | null
           id?: string
           image_url?: string | null
           is_human_reviewed?: boolean | null
+          is_practice_bank?: boolean
           max_score?: number
+          max_words?: number | null
+          min_words?: number | null
           options?: Json | null
           prompt?: string
           question_type?: Database["public"]["Enums"]["question_type"]
+          prep_time?: number | null
+          record_time?: number | null
           reference_text?: string | null
+          section?: string | null
           situation_context?: string | null
           tags?: string[] | null
+          time_limit?: number | null
+          title?: string | null
+          instruction?: string | null
           usage_count?: number | null
         }
         Relationships: []
@@ -522,6 +555,7 @@ export type Database = {
           status: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          stripe_checkout_session_id: string | null
           cancel_at_period_end: boolean
           tier: Database["public"]["Enums"]["subscription_tier"] | null
           updated_at: string | null
@@ -540,6 +574,7 @@ export type Database = {
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          stripe_checkout_session_id?: string | null
           cancel_at_period_end?: boolean
           tier?: Database["public"]["Enums"]["subscription_tier"] | null
           updated_at?: string | null
@@ -558,6 +593,7 @@ export type Database = {
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          stripe_checkout_session_id?: string | null
           cancel_at_period_end?: boolean
           tier?: Database["public"]["Enums"]["subscription_tier"] | null
           updated_at?: string | null
@@ -678,6 +714,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_paid_pack: {
+        Args: {
+          p_customer_id: string
+          p_duration_days: number
+          p_session_id: string
+          p_tier: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       consume_ai_score_credit: {
         Args: { p_user_id: string }
         Returns: {
@@ -771,12 +817,15 @@ export type Database = {
       question_type:
         | "read_aloud"
         | "repeat_sentence"
+        | "describe_image"
         | "retell_lecture"
         | "answer_short_question"
         | "summarise_group_discussion"
         | "respond_to_situation"
         | "summarize_written_text"
+        | "summarize_written_text_core"
         | "write_essay"
+        | "write_email"
         | "mc_single_reading"
         | "mc_multiple_reading"
         | "reorder_paragraphs"
@@ -797,7 +846,7 @@ export type Database = {
         | "failed"
         | "needs_review"
         | "human_review_pending"
-      subscription_tier: "free" | "basic" | "premium" | "enterprise"
+      subscription_tier: "free" | "basic" | "premium" | "enterprise" | "pro" | "vip"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -929,12 +978,15 @@ export const Constants = {
       question_type: [
         "read_aloud",
         "repeat_sentence",
+        "describe_image",
         "retell_lecture",
         "answer_short_question",
         "summarise_group_discussion",
         "respond_to_situation",
         "summarize_written_text",
+        "summarize_written_text_core",
         "write_essay",
+        "write_email",
         "mc_single_reading",
         "mc_multiple_reading",
         "reorder_paragraphs",
@@ -957,7 +1009,7 @@ export const Constants = {
         "needs_review",
         "human_review_pending",
       ],
-      subscription_tier: ["free", "basic", "premium", "enterprise"],
+      subscription_tier: ["free", "basic", "premium", "enterprise", "pro", "vip"],
     },
   },
 } as const

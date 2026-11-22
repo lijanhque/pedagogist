@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserData } from "@/contexts/UserDataContext";
+import { useCredits } from "@/hooks/useCredits";
 
 export default function Profile() {
   const { user, loading: authLoading } = useAuth();
-  const { subscription } = useUserData();
+  const { tier, credits } = useCredits();
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState("");
   const profile = useQuery({
@@ -45,6 +45,8 @@ export default function Profile() {
   }
 
   const name = profile.data?.display_name ?? user?.user_metadata?.display_name ?? "Learner";
+  const hasActivePack = tier === "pro" || tier === "vip";
+  const planName = tier === "vip" ? "VIP" : tier === "pro" ? "Pro" : "Free";
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
@@ -73,7 +75,7 @@ export default function Profile() {
           <Card>
             <CardHeader><CardTitle>Learning account</CardTitle><CardDescription>Your plan and scoring access at a glance.</CardDescription></CardHeader>
             <CardContent className="flex flex-col gap-5">
-              <div className="flex items-center gap-3"><BadgeCheck className="size-5 text-primary" /><div><p className="font-medium capitalize">{subscription?.tier ?? "Free"} plan</p><p className="text-sm text-muted-foreground">{subscription?.credits_remaining ?? 0} scoring credits available</p></div></div>
+              <div className="flex items-center gap-3"><BadgeCheck className="size-5 text-primary" /><div><p className="font-medium">{planName} plan</p><p className="text-sm text-muted-foreground">{hasActivePack ? "Unlimited AI scoring" : `${credits} AI scoring credits available`}</p></div></div>
               <Button variant="outline" asChild><Link to="/billing">View billing details</Link></Button>
             </CardContent>
           </Card>

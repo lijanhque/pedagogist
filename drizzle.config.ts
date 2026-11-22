@@ -8,3 +8,4 @@ export default defineConfig({
     url: process.env.LOVABLE_DB_MIGRATION_URL ?? "",
   },
 });
+

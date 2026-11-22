@@ -20,8 +20,6 @@ export type TestType =
   | "describe-image"
   | "retell-lecture"
   | "answer-short-question"
-  | "summarize-spoken-text"
-  | "read-and-retell"
   | "summarize-group-discussion"
   | "respond-to-situation";
 

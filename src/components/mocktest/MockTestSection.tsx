@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { getPracticeScoreError, savePracticeResponse } from "@/lib/practiceResponses";
 import { transcribeAudio } from "@/lib/scoring";
 import { uploadRecording } from "@/lib/uploadRecording";
+import { toast } from "sonner";
 
 interface DetailedFeedback {
   totalScore: number;
@@ -70,7 +71,7 @@ interface MockTestSectionProps {
   timeLimit: number;
 }
 
-type Phase = "answering" | "ready-to-submit" | "processing" | "submitted" | "scoring" | "feedback";
+type Phase = "listening" | "preparing" | "answering" | "ready-to-submit" | "processing" | "submitted" | "scoring" | "feedback";
 
 export function MockTestSection({
   question,
@@ -80,12 +81,22 @@ export function MockTestSection({
   onSkip,
   timeLimit
 }: MockTestSectionProps) {
-  const [phase, setPhase] = useState<Phase>("answering");
+  const isGroupDiscussionQuestion = question.type === "summarize-group-discussion";
+  const isRespondToSituationQuestion = question.type === "respond-to-situation";
+  const isAudioPromptQuestion = isGroupDiscussionQuestion || isRespondToSituationQuestion;
+  const hasPreparationPhase = isAudioPromptQuestion;
+  const responseTimeLimit = hasPreparationPhase
+    ? question.recordTime || (isGroupDiscussionQuestion ? 120 : 40)
+    : timeLimit;
+  const [phase, setPhase] = useState<Phase>(
+    isAudioPromptQuestion ? "listening" : "answering"
+  );
   const [answer, setAnswer] = useState<any>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [questionTime, setQuestionTime] = useState(timeLimit);
+  const [questionTime, setQuestionTime] = useState(responseTimeLimit);
+  const [prepTime, setPrepTime] = useState(question.prepTime || 10);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
   const [draggedItems, setDraggedItems] = useState<string[]>([]);
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
@@ -94,7 +105,16 @@ export function MockTestSection({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { credits, refresh: refreshCredits, optimisticallySpendOne } = useCredits();
   
-  const { speak, isSpeaking, stop: stopSpeaking } = useTextToSpeech();
+  const playbackStartedRef = useRef(false);
+  const {
+    speak,
+    isSpeaking,
+    stop: stopSpeaking,
+    isSupported: ttsSupported,
+    elapsedSeconds,
+    durationSeconds,
+    progress: audioProgress,
+  } = useTextToSpeech();
   const { 
     isRecording, 
     recordingTime, 
@@ -104,16 +124,23 @@ export function MockTestSection({
     startRecording, 
     stopRecording, 
     resetRecording 
-  } = useAudioRecorder(timeLimit);
+  } = useAudioRecorder(responseTimeLimit);
 
   // Reset state when question changes
   useEffect(() => {
-    setPhase("answering");
+    setPhase(
+      isAudioPromptQuestion
+        ? (ttsSupported ? "listening" : "preparing")
+        : "answering"
+    );
     setAnswer(null);
     setSelectedOptions([]);
     setTextAnswer("");
-    setQuestionTime(timeLimit);
+    setQuestionTime(responseTimeLimit);
+    setPrepTime(question.prepTime || 10);
     setHasPlayedAudio(false);
+    playbackStartedRef.current = false;
+    stopSpeaking();
     setBlankAnswers({});
     setFeedback(null);
     setResponseId(null);
@@ -127,7 +154,19 @@ export function MockTestSection({
         .map(p => p.id);
       setDraggedItems(shuffled);
     }
-  }, [question.id, timeLimit]);
+  }, [question.id, responseTimeLimit, stopSpeaking, ttsSupported]);
+
+  // Preparation timer for speaking prompts that have a dedicated prep phase.
+  useEffect(() => {
+    if (phase !== "preparing") return;
+    if (prepTime <= 0) {
+      setPhase("answering");
+      return;
+    }
+
+    const timer = setTimeout(() => setPrepTime((prev) => Math.max(0, prev - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [phase, prepTime]);
 
   // Question timer
   useEffect(() => {
@@ -145,6 +184,25 @@ export function MockTestSection({
     
     return () => clearInterval(timer);
   }, [question.id, phase]);
+
+  useEffect(() => {
+    if (phase === "answering" && isRecording && questionTime <= 0) stopRecording();
+  }, [isRecording, phase, questionTime, stopRecording]);
+
+  useEffect(() => {
+    if (isSpeaking && phase === "listening") playbackStartedRef.current = true;
+    if (
+      isAudioPromptQuestion &&
+      phase === "listening" &&
+      hasPlayedAudio &&
+      playbackStartedRef.current &&
+      !isSpeaking
+    ) {
+      playbackStartedRef.current = false;
+      setPrepTime(question.prepTime || 10);
+      setPhase("preparing");
+    }
+  }, [hasPlayedAudio, isAudioPromptQuestion, isSpeaking, phase, question.prepTime]);
 
   // Keep completed audio as a draft until the learner submits it.
   useEffect(() => {
@@ -166,8 +224,15 @@ export function MockTestSection({
   }, [audioBlob, selectedOptions, draggedItems, blankAnswers]);
 
   const isSpeakingQuestion = () => {
-    return ["read-aloud", "repeat-sentence", "describe-image", "retell-lecture", "answer-short-question"]
-      .includes(question.type);
+    return [
+      "read-aloud",
+      "repeat-sentence",
+      "describe-image",
+      "retell-lecture",
+      "answer-short-question",
+      "summarize-group-discussion",
+      "respond-to-situation",
+    ].includes(question.type);
   };
 
   const isWritingQuestion = () => {
@@ -188,7 +253,8 @@ export function MockTestSection({
     return ["repeat-sentence", "retell-lecture", "answer-short-question", 
       "highlight-correct-summary", "mc-single-listening", "mc-multiple-listening",
       "fill-blanks-listening", "highlight-incorrect-words", "write-from-dictation",
-      "select-missing-word", "summarize-spoken-text"
+      "select-missing-word", "summarize-spoken-text", "summarize-group-discussion",
+      "respond-to-situation"
     ].includes(question.type);
   };
 
@@ -213,18 +279,37 @@ export function MockTestSection({
       "highlight-incorrect-words": 4,
       "write-from-dictation": 12,
       "select-missing-word": 1,
-      "summarize-spoken-text": 10
+      "summarize-spoken-text": 10,
+      "summarize-group-discussion": 16,
+      "respond-to-situation": 90
     };
     return scoreMap[question.type] || 1;
   };
 
   const handlePlayAudio = () => {
+    if (isGroupDiscussionQuestion && hasPlayedAudio) return;
     const textToSpeak = question.content?.text || 
       question.content?.audioText || 
       question.content?.lectureContent || 
+      question.content?.discussionContent ||
+      question.content?.situationContext ||
       question.content?.question;
     
     if (textToSpeak) {
+      if (!ttsSupported) {
+        toast.error(
+          isGroupDiscussionQuestion
+            ? "Text-to-speech is not supported in this browser. You can read the discussion transcript instead."
+            : "Text-to-speech is not supported in this browser. You can read the situation instead."
+        );
+        setHasPlayedAudio(true);
+        if (isAudioPromptQuestion) {
+          setPrepTime(question.prepTime || 10);
+          setPhase("preparing");
+        }
+        return;
+      }
+      if (isGroupDiscussionQuestion) setHasPlayedAudio(true);
       speak(textToSpeak);
       setHasPlayedAudio(true);
     }
@@ -314,7 +399,7 @@ export function MockTestSection({
         questionType: question.type,
         section: isSpeakingQuestion() ? "speaking" : "writing",
         responseId,
-        originalText: question.content?.text || question.content?.lectureContent || "",
+        originalText: question.content?.text || question.content?.lectureContent || question.content?.discussionContent || question.content?.situationContext || "",
         sourceText: question.content?.sourceText || question.content?.dictationText || "",
         essayPrompt: question.content?.essayPrompt || "",
       });
@@ -422,7 +507,9 @@ export function MockTestSection({
             <h4 className="font-semibold flex items-center gap-2 mb-4">
               <Volume2 className="h-5 w-5 text-primary" />
               Pronunciation Analysis
-              <Badge variant="outline" className="ml-auto">{feedback.pronunciation.score}/90</Badge>
+              <Badge variant="outline" className="ml-auto">
+                {feedback.pronunciation.score}/{isGroupDiscussionQuestion ? 5 : 90}
+              </Badge>
             </h4>
             {feedback.pronunciation.issues.length > 0 && (
               <div className="mb-3">
@@ -458,8 +545,10 @@ export function MockTestSection({
           <Card className="p-6">
             <h4 className="font-semibold flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Fluency Analysis
-              <Badge variant="outline" className="ml-auto">{feedback.fluency.score}/90</Badge>
+              {isGroupDiscussionQuestion ? "Oral Fluency" : "Fluency Analysis"}
+              <Badge variant="outline" className="ml-auto">
+                {feedback.fluency.score}/{isGroupDiscussionQuestion ? 5 : 90}
+              </Badge>
             </h4>
             {feedback.fluency.issues.length > 0 && (
               <ul className="text-sm text-muted-foreground space-y-1">
@@ -468,6 +557,32 @@ export function MockTestSection({
                     <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                     {issue}
                   </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+
+        {feedback.content && (
+          <Card className="p-6">
+            <h4 className="font-semibold flex items-center gap-2 mb-4">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              Content Analysis
+              <Badge variant="outline" className="ml-auto">
+                {feedback.content.score}/{isGroupDiscussionQuestion ? 6 : 90}
+              </Badge>
+            </h4>
+            {feedback.content.issues.length > 0 && (
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {feedback.content.issues.map((issue, idx) => (
+                  <li key={idx}>{issue}</li>
+                ))}
+              </ul>
+            )}
+            {feedback.content.suggestions.length > 0 && (
+              <ul className="mt-3 text-sm text-muted-foreground space-y-1">
+                {feedback.content.suggestions.map((suggestion, idx) => (
+                  <li key={idx}>{suggestion}</li>
                 ))}
               </ul>
             )}
@@ -637,13 +752,14 @@ export function MockTestSection({
       return (
         <div className="space-y-6">
           {/* Audio player for listen-first questions */}
-          {needsAudio() && (
+          {needsAudio() && !(isAudioPromptQuestion && !ttsSupported) && (
             <Card className="p-4">
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={isSpeaking ? stopSpeaking : handlePlayAudio}
                   size="icon"
                   className="h-12 w-12 rounded-full"
+                  disabled={isGroupDiscussionQuestion && hasPlayedAudio && !isSpeaking}
                 >
                   {isSpeaking ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                 </Button>
@@ -651,10 +767,34 @@ export function MockTestSection({
                   <p className="text-sm font-medium">
                     {isSpeaking ? "Playing audio..." : hasPlayedAudio ? "Audio played" : "Click to play audio"}
                   </p>
-                  <p className="text-xs text-muted-foreground">Listen carefully before recording</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isGroupDiscussionQuestion ? "This discussion can be played once" : "Listen carefully before recording"}
+                  </p>
+                  <Progress value={audioProgress} className="mt-2 h-1.5" />
+                  <p className="mt-1 text-right text-xs text-muted-foreground">
+                    {formatTime(elapsedSeconds)} / {
+                      durationSeconds > 0
+                        ? `${audioProgress >= 100 ? "" : "~"}${formatTime(durationSeconds)}`
+                        : "--:--"
+                    }
+                  </p>
                 </div>
                 <Volume2 className="h-5 w-5 text-muted-foreground" />
               </div>
+            </Card>
+          )}
+
+          {isGroupDiscussionQuestion && !ttsSupported && (
+            <Card className="p-6">
+              <p className="mb-2 text-sm font-medium">Discussion transcript</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed">{question.content?.discussionContent}</p>
+            </Card>
+          )}
+
+          {isRespondToSituationQuestion && question.content?.situationContext && (
+            <Card className="p-6">
+              <p className="mb-2 text-sm font-medium">Situation</p>
+              <p className="text-lg leading-relaxed">{question.content.situationContext}</p>
             </Card>
           )}
           
@@ -679,12 +819,29 @@ export function MockTestSection({
           {/* Recording controls */}
           <Card className="p-6">
             <div className="text-center space-y-4">
-              {!isRecording && !audioBlob && (
+              {phase === "listening" && (
+                <p className="text-sm text-muted-foreground">
+                  {isGroupDiscussionQuestion ? "Listen to the discussion" : "Listen to the situation"} before your preparation time begins.
+                </p>
+              )}
+
+              {phase === "preparing" && (
+                <div className="space-y-2">
+                  <p className="font-medium">Preparation time</p>
+                  <p className="font-mono text-2xl">{formatTime(prepTime)}</p>
+                </div>
+              )}
+
+              {phase === "answering" && !isRecording && !audioBlob && (
                 <Button 
                   onClick={startRecording}
                   size="lg"
                   className="bg-gradient-to-r from-primary to-accent text-white"
-                  disabled={needsAudio() && !hasPlayedAudio && !isSpeaking}
+                  disabled={
+                    questionTime <= 0 ||
+                    (needsAudio() && !hasPlayedAudio && !(isAudioPromptQuestion && !ttsSupported)) ||
+                    (isAudioPromptQuestion && isSpeaking)
+                  }
                 >
                   <Mic className="mr-2 h-5 w-5" />
                   Start Recording
@@ -1063,12 +1220,14 @@ export function MockTestSection({
         <div className="text-right">
           <div className={cn(
             "flex items-center gap-2 font-mono text-lg",
-            questionTime < 30 && "text-destructive"
+            phase === "answering" && questionTime < 30 && "text-destructive"
           )}>
             <Clock className="h-4 w-4" />
-            {formatTime(questionTime)}
+            {phase === "listening" ? "--:--" : formatTime(phase === "preparing" ? prepTime : questionTime)}
           </div>
-          <p className="text-xs text-muted-foreground">Time remaining</p>
+          <p className="text-xs text-muted-foreground">
+            {phase === "listening" ? "Play audio once" : phase === "preparing" ? "Preparation time" : "Time remaining"}
+          </p>
         </div>
       </div>
       

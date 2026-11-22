@@ -9,10 +9,12 @@ import { WritingTest } from "@/components/writing/WritingTest";
 import { ReadingTest } from "@/components/reading/ReadingTest";
 import { ListeningTest } from "@/components/listening/ListeningTest";
 import { HistoryPanel } from "@/components/speaking/HistoryPanel";
-import { speakingQuestions, TestType, getTestTypeInfo } from "@/data/speakingQuestions";
-import { writingQuestions, WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
-import { readingQuestions, ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
-import { listeningQuestions, ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { PracticeQuestionBankStatus } from "@/components/practice/PracticeQuestionBankStatus";
+import { TestType, getTestTypeInfo } from "@/data/speakingQuestions";
+import { WritingTestType, getWritingTestTypeInfo } from "@/data/writingQuestions";
+import { ReadingTestType, getReadingTestTypeInfo } from "@/data/readingQuestions";
+import { ListeningTestType, getListeningTestTypeInfo } from "@/data/listeningQuestions";
+import { usePracticeQuestionBank } from "@/lib/practiceQuestionBank";
 import { useUserHistory } from "@/hooks/useUserHistory";
 import { useScoringLimit } from "@/hooks/useScoringLimit";
 import { ScoreResult } from "@/lib/scoring";
@@ -32,16 +34,13 @@ export default function Index() {
   const [isQuestionPanelOpen, setIsQuestionPanelOpen] = useState(false);
   const { saveAttempt } = useUserHistory();
   const { remainingAttempts, canScore } = useScoringLimit();
-
-  const currentQuestions = selectedType
-    ? selectedSection === "speaking"
-      ? speakingQuestions.filter((q) => q.type === selectedType)
-      : selectedSection === "writing"
-      ? writingQuestions.filter((q) => q.type === selectedType)
-      : selectedSection === "reading"
-      ? readingQuestions.filter((q) => q.type === selectedType)
-      : listeningQuestions.filter((q) => q.type === selectedType)
-    : [];
+  const {
+    questions: currentQuestions,
+    loading: currentQuestionsLoading,
+    error: currentQuestionsError,
+    warning: currentQuestionsWarning,
+    retry: retryQuestions,
+  } = usePracticeQuestionBank(selectedSection, selectedType);
 
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
@@ -173,10 +172,25 @@ export default function Index() {
                   <HistoryPanel />
                 </TabsContent>
               </Tabs>
+            ) : currentQuestionsLoading || currentQuestionsError || currentQuestions.length === 0 ? (
+              <PracticeQuestionBankStatus
+                loading={currentQuestionsLoading}
+                error={currentQuestionsError}
+                warning={currentQuestionsWarning}
+                questionCount={currentQuestions.length}
+                onRetry={retryQuestions}
+              />
             ) : (
               <div className="flex gap-4 h-full max-w-4xl mx-auto">
                 {/* Test Area - Full Width, Responsive */}
                 <div className="flex-1 w-full">
+                  <PracticeQuestionBankStatus
+                    loading={false}
+                    error={null}
+                    warning={currentQuestionsWarning}
+                    questionCount={currentQuestions.length}
+                    onRetry={retryQuestions}
+                  />
                   {/* Back button and header - Mobile friendly */}
                   <div className="mb-4">
                     <div className="flex items-center gap-3 flex-wrap">
