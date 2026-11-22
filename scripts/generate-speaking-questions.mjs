@@ -863,14 +863,117 @@ function buildRepeatSentence() {
   return out;
 }
 
+// ===== SVG CHART GENERATORS =====
+function seededRandom(seed) {
+  let s = seed;
+  return () => { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
+}
+function svgDataUri(svg) {
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+const SVG_W = 640, SVG_H = 480;
+const COLORS = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f","#edc948","#b07aa1","#ff9da7","#9c755f","#bab0ac"];
+
+function svgBarChart(seed, title, labels, values) {
+  const rand = seededRandom(seed);
+  const max = Math.max(...values) * 1.2;
+  const barW = 360 / labels.length;
+  const bars = labels.map((l, i) => {
+    const h = (values[i] / max) * 280;
+    const x = 60 + i * barW + 10;
+    const y = 350 - h;
+    return `<rect x="${x}" y="${y}" width="${barW - 20}" height="${h}" fill="${COLORS[i % COLORS.length]}" rx="2"/><text x="${x + (barW-20)/2}" y="${y - 5}" text-anchor="middle" font-size="11" fill="#333">${values[i]}</text><text x="${x + (barW-20)/2}" y="370" text-anchor="middle" font-size="10" fill="#555">${l}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text><line x1="60" y1="350" x2="600" y2="350" stroke="#333" stroke-width="2"/><line x1="60" y1="70" x2="60" y2="350" stroke="#333" stroke-width="2"/>${bars}<text x="20" y="210" transform="rotate(-90,20,210)" text-anchor="middle" font-size="12" fill="#555">Value</text></svg>`;
+}
+
+function svgLineChart(seed, title, months, series) {
+  const rand = seededRandom(seed);
+  const max = Math.max(...series.flat()) * 1.2;
+  const min = Math.min(...series.flat()) * 0.8;
+  const range = max - min || 1;
+  const xStep = 520 / (months.length - 1);
+  const yFor = v => 350 - ((v - min) / range) * 260;
+  const grid = [0,1,2,3,4].map(i => { const y = 90 + i * 65; const v = (max - (i * range / 4)).toFixed(0); return `<line x1="60" y1="${y}" x2="600" y2="${y}" stroke="#e0e0e0" stroke-width="1"/><text x="55" y="${y+4}" text-anchor="end" font-size="10" fill="#777">${v}</text>`; }).join("");
+  const lines = series.map((data, si) => {
+    const pts = data.map((v, i) => `${60 + i * xStep},${yFor(v)}`).join(" ");
+    const dots = data.map((v, i) => `<circle cx="${60 + i * xStep}" cy="${yFor(v)}" r="4" fill="${COLORS[si % COLORS.length]}"/>`).join("");
+    return `<polyline points="${pts}" fill="none" stroke="${COLORS[si % COLORS.length]}" stroke-width="2.5"/>${dots}`;
+  }).join("");
+  const xLabels = months.map((m, i) => `<text x="${60 + i * xStep}" y="370" text-anchor="middle" font-size="10" fill="#555">${m}</text>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text><line x1="60" y1="350" x2="600" y2="350" stroke="#333" stroke-width="2"/><line x1="60" y1="90" x2="60" y2="350" stroke="#333" stroke-width="2"/>${grid}${lines}${xLabels}</svg>`;
+}
+
+function svgPieChart(seed, title, labels, values) {
+  const total = values.reduce((a,b) => a+b, 0);
+  let angle = -90;
+  const cx = 240, cy = 250, r = 140;
+  const slices = labels.map((l, i) => {
+    const pct = values[i] / total;
+    const end = angle + pct * 360;
+    const large = pct > 0.5 ? 1 : 0;
+    const x1 = cx + r * Math.cos(angle * Math.PI / 180);
+    const y1 = cy + r * Math.sin(angle * Math.PI / 180);
+    const x2 = cx + r * Math.cos(end * Math.PI / 180);
+    const y2 = cy + r * Math.sin(end * Math.PI / 180);
+    const midAngle = (angle + end) / 2;
+    const lx = cx + (r + 30) * Math.cos(midAngle * Math.PI / 180);
+    const ly = cy + (r + 30) * Math.sin(midAngle * Math.PI / 180);
+    const path = pct >= 1 ? `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r} Z` : `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+    angle = end;
+    return `<path d="${path}" fill="${COLORS[i % COLORS.length]}" stroke="white" stroke-width="2"/><text x="${lx}" y="${ly}" text-anchor="middle" font-size="11" fill="#333" font-weight="bold">${(pct*100).toFixed(0)}%</text>`;
+  }).join("");
+  const legend = labels.map((l, i) => `<rect x="440" y="${120 + i * 30}" width="15" height="15" fill="${COLORS[i % COLORS.length]}"/><text x="462" y="${132 + i * 30}" font-size="12" fill="#333">${l}</text>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text>${slices}${legend}</svg>`;
+}
+
+function svgTable(seed, title, headers, rows) {
+  const colW = 540 / headers.length;
+  const rowH = 36;
+  const startX = 50, startY = 80;
+  const headerRow = headers.map((h, i) => `<rect x="${startX + i * colW}" y="${startY}" width="${colW}" height="${rowH}" fill="#4e79a7"/><text x="${startX + i * colW + colW/2}" y="${startY + 23}" text-anchor="middle" font-size="13" font-weight="bold" fill="white">${h}</text>`).join("");
+  const dataRows = rows.map((row, ri) => row.map((cell, ci) => {
+    const bg = ri % 2 === 0 ? "#f7f7f7" : "white";
+    return `<rect x="${startX + ci * colW}" y="${startY + (ri+1) * rowH}" width="${colW}" height="${rowH}" fill="${bg}" stroke="#ddd" stroke-width="1"/><text x="${startX + ci * colW + colW/2}" y="${startY + (ri+1) * rowH + 23}" text-anchor="middle" font-size="12" fill="#333">${cell}</text>`;
+  }).join("")).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text>${headerRow}${dataRows}</svg>`;
+}
+
+function svgProcessDiagram(seed, title, steps) {
+  const boxW = 100, boxH = 50, gap = 30;
+  const totalW = steps.length * boxW + (steps.length - 1) * gap;
+  const startX = (SVG_W - totalW) / 2;
+  const y = 220;
+  const boxes = steps.map((s, i) => {
+    const x = startX + i * (boxW + gap);
+    const arrow = i < steps.length - 1 ? `<line x1="${x + boxW}" y1="${y + boxH/2}" x2="${x + boxW + gap}" y2="${y + boxH/2}" stroke="#4e79a7" stroke-width="2"/><polygon points="${x + boxW + gap},${y + boxH/2 - 5} ${x + boxW + gap + 10},${y + boxH/2} ${x + boxW + gap},${y + boxH/2 + 5}" fill="#4e79a7"/>` : "";
+    return `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="8" fill="${COLORS[i % COLORS.length]}" opacity="0.85"/><text x="${x + boxW/2}" y="${y + 30}" text-anchor="middle" font-size="12" fill="white" font-weight="bold">${s}</text>${arrow}`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text>${boxes}</svg>`;
+}
+
+function svgWorldMap(seed, title, regions) {
+  // Simple stylized map with colored regions
+  const shapes = [
+    `<path d="M80,120 L180,100 L220,160 L160,220 L90,200 Z" fill="#4e79a7" opacity="0.7"/>`,
+    `<path d="M230,90 L340,80 L360,180 L280,220 L240,180 Z" fill="#f28e2b" opacity="0.7"/>`,
+    `<path d="M370,120 L480,110 L500,200 L400,230 L370,180 Z" fill="#59a14f" opacity="0.7"/>`,
+    `<path d="M180,260 L300,250 L340,340 L240,370 L180,320 Z" fill="#e15759" opacity="0.7"/>`,
+    `<path d="M380,260 L480,250 L500,340 L410,360 L370,310 Z" fill="#76b7b2" opacity="0.7"/>`,
+  ];
+  const labels = regions.slice(0, 5).map((r, i) => {
+    const coords = [[130,160],[290,140],[430,170],[250,310],[430,300]];
+    const [cx, cy] = coords[i];
+    return `<circle cx="${cx}" cy="${cy}" r="5" fill="#333"/><text x="${cx + 8}" y="${cy + 4}" font-size="11" fill="#222" font-weight="bold">${r}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}"><rect width="100%" height="100%" fill="white"/><text x="${SVG_W/2}" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">${title}</text><rect x="20" y="60" width="600" height="400" fill="#e8f4f8" stroke="#b0d4e3" stroke-width="2" rx="8"/>${shapes.join("")}${labels}<text x="${SVG_W/2}" y="440" text-anchor="middle" font-size="12" fill="#777">Stylized world map showing regional distribution</text></svg>`;
+}
+
 function buildDescribeImage() {
   const out = [];
   let i = 1;
-  const push = (desc, difficulty) => {
-    const seed = i * 7919;
-    const w = 600 + (i % 4) * 100;
-    const h = 400 + (i % 3) * 50;
-    out.push({ id: `di-${i}`, type: "describe-image", title: "Describe Image", instruction: TYPES["describe-image"].instruction, prepTime: 25, recordTime: 40, difficulty, content: { imageUrl: `https://picsum.photos/seed/di${seed}/${w}/${h}`, imageDescription: desc } });
+  const push = (desc, difficulty, imageUrl) => {
+    out.push({ id: `di-${i}`, type: "describe-image", title: "Describe Image", instruction: TYPES["describe-image"].instruction, prepTime: 25, recordTime: 40, difficulty, content: { imageUrl, imageDescription: desc } });
     i++;
   };
 
@@ -895,129 +998,75 @@ function buildDescribeImage() {
     "sleep hours", "exercise minutes", "screen time", "reading hours", "meditation sessions",
     "commute distance", "travel time", "fuel stops", "toll booths", "parking spaces",
   ];
-  const periods = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-    "Q1", "Q2", "Q3", "Q4", "spring", "summer", "autumn", "winter",
-    "weekdays", "weekends", "Mondays", "Fridays", "the morning", "the afternoon",
-    "2020", "2021", "2022", "2023", "2024", "last year", "this year",
+  const periods = ["January","February","March","April","May","June","July","August","September","October","November","December","Q1","Q2","Q3","Q4"];
+  const categories = ["Math","Science","English","History","Art","Music","PE","Computers","Drama","Economics","Geography","Biology"];
+  const regions = ["North America","South America","Europe","Asia","Africa","Oceania"];
+  const stepSets = [
+    ["Research","Design","Develop","Test","Deploy"],
+    ["Plan","Execute","Review","Improve"],
+    ["Collect","Analyze","Report","Decide"],
+    ["Identify","Assess","Prioritize","Implement","Evaluate"],
+    ["Define","Measure","Analyze","Improve","Control"],
+    ["Idea","Prototype","Validate","Launch"],
   ];
-  const trends = [
-    "steady increase", "gradual decline", "sharp rise", "stable trend", "seasonal variation",
-    "consistent growth", "slight decrease", "rapid increase", "moderate decline", "steady pattern",
-    "cyclical pattern", "upward trend", "downward trend", "plateau followed by growth", "volatile movement",
-    "gradual recovery", "sudden drop", "slow but steady climb", "brief spike", "long-term stability",
-  ];
-  const categories = [
-    "Math", "Science", "English", "History", "Art", "Music", "PE", "Computers",
-    "Drama", "Economics", "Geography", "Biology", "Chemistry", "Physics", "Literature",
-    "Philosophy", "Psychology", "Sociology", "Anthropology", "Political Science",
-  ];
-  const chartTypes = [
-    "bar chart", "pie chart", "line graph", "table", "flowchart", "scatter plot",
-    "histogram", "area chart", "doughnut chart", "radar chart",
-  ];
-  const mapRegions = [
-    "countries", "economies", "communities", "populations", "regions", "cities",
-    "provinces", "territories", "municipalities", "zones", "districts", "states",
-    "continents", "subcontinents", "island nations", "landlocked areas", "coastal regions",
-  ];
-  const metrics = [
-    "economic", "social", "health", "environmental", "educational", "infrastructural",
-    "technological", "cultural", "demographic", "geographic", "political", "legal",
-  ];
-  const scales = ["95", "99", "90", "85", "92", "88", "96", "94", "89", "91", "87", "93", "86", "97", "84", "98", "83", "82"];
-  const methods = [
-    "regression", "correlation", "classification", "clustering", "projection",
-    "estimation", "validation", "calibration", "optimization", "simulation",
-    "interpolation", "extrapolation", "segmentation", "dimensionality reduction",
-  ];
-  const attributes = [
-    "demographic", "environmental", "geographic", "institutional", "regulatory",
-    "economic", "technological", "social", "political", "cultural",
-    "historical", "linguistic", "psychological", "anthropological",
-  ];
-  const years = Array.from({ length: 30 }, (_, n) => 2000 + n);
 
-  // Easy: 60 questions
-  for (let n = 0; n < 60; n++) {
-    const s = subjects[n % subjects.length];
-    const p = periods[n % periods.length];
-    const t = trends[n % trends.length];
-    const ct = chartTypes[n % chartTypes.length];
-    const desc = `A ${ct} showing ${s} over ${p} with a ${t}.`;
-    push(desc, "easy");
-  }
+  // Chart type cycle for PTE format variety: bar, line, pie, table, map, process
+  const chartCycle = ["bar","line","pie","table","map","process"];
+  const rand = seededRandom(42);
 
-  // Medium: 130 questions
-  for (let n = 0; n < 130; n++) {
-    const s = subjects[(n * 7) % subjects.length];
-    const r = mapRegions[(n * 3) % mapRegions.length];
-    const m1 = metrics[n % metrics.length];
-    const m2 = metrics[(n + 5) % metrics.length];
-    const y = years[n % years.length];
-    const templates = [
-      `A geographic map showing ${s} across ${r} with color gradients indicating ${m1} levels.`,
-      `A timeline of ${s} from ${y - 10} to ${y}, highlighting key milestones and turning points.`,
-      `A comparison chart showing ${s} for different ${r} across ${m1} and ${m2} metrics.`,
-      `A process flowchart illustrating the ${s} process with multiple distinct stages and feedback loops.`,
-      `A stacked area chart showing changes in ${s} over ${y - 5} to ${y} years, broken down by ${m1} sectors.`,
-      `A map showing the spread of ${s} across ${r}, with markers indicating ${m1} at different stages.`,
-      `A comparison table showing key ${s} metrics for various ${r} including ${m1} and ${m2} indicators.`,
-      `A diagram showing the ${s} process from input to output with labeled ${m1} and ${m2} factors.`,
-      `A chart showing the correlation between ${s} and ${m1} over multiple years with trend lines.`,
-      `A map highlighting regions where ${s} varies significantly, with shades for different ${m1} levels.`,
-      `A comparison graph showing ${s} growth rates for different ${r} over the past decade.`,
-      `A diagram illustrating the feedback loop between ${s} and ${m1} with causal arrows.`,
-      `A chart showing the distribution of ${s} across different ${m1} industry sectors.`,
-      `A map showing ${s} routes across ${r}, with line thickness indicating ${m1} volume.`,
-      `A graph comparing ${s} across different ${m1} groups in a specific region.`,
-    ];
-    const desc = templates[n % templates.length];
-    push(desc, "medium");
-  }
-
-  // Hard: 159 questions
-  for (let n = 0; n < 159; n++) {
-    const a = subjects[(n * 11) % subjects.length];
-    const b = metrics[(n * 7) % metrics.length];
-    const c = attributes[(n * 3) % attributes.length];
-    const d = scales[n % scales.length];
-    const e = methods[n % methods.length];
-    const r = mapRegions[(n * 13) % mapRegions.length];
-    const y = years[n % years.length];
-    const templates = [
-      `A multivariable regression plot showing the relationship between ${a}, ${b} factors, and ${c} outcomes with ${d}% confidence intervals.`,
-      `A geographic information system map overlaying ${a} with ${b} and ${c} data across ${r}.`,
-      `A decision tree diagram showing outcomes of ${a} under ${b}, ${c}, and ${d}% probability scenarios.`,
-      `A multi-dimensional scaling plot showing perceived similarity between ${a} across ${c} attributes.`,
-      `A phylogenetic tree showing evolutionary relationships between ${a} with branch lengths representing ${b} divergence.`,
-      `A systems dynamics diagram showing feedback loops between ${a}, ${b}, and ${c} with ${d}% sensitivity indicators.`,
-      `A geographic heat map showing correlation between ${a} and ${b} across ${r} urban centers.`,
-      `A complex network graph showing ${a} through ${b}, with nodes representing ${c} entities and edges for interaction strength.`,
-      `A multi-panel scientific figure showing ${a} across different ${b} conditions with ${d}% statistical significance annotations.`,
-      `A geographic contour map showing ${a} gradients across ${r}, with ${b} direction indicated by arrows.`,
-      `A causal loop diagram illustrating relationships between ${a}, ${b}, and ${c} with ${e} feedback mechanisms.`,
-      `A multi-axis chart comparing ${a} across ${b}, ${c}, and ${d}% dimensions with ${e} overlays.`,
-      `A scientific illustration showing the mechanism of ${a} with labeled ${b} and ${c} components and directional arrows.`,
-      `A geographic map showing projected impact of ${a} on ${b} in ${r} under different ${c} scenarios by ${y}.`,
-      `A data visualization showing relationship between ${a} and ${b} across ${r} countries over ${y - 10} years with ${e} methods.`,
-    ];
-    const desc = templates[n % templates.length];
-    push(desc, "hard");
-  }
-
-  // Fill remaining to 349 with easy (all unique due to index-based selection)
-  while (i <= 349) {
-    const n = i;
-    const s = subjects[n % subjects.length];
-    const p = periods[n % periods.length];
-    const t = trends[n % trends.length];
-    const ct = chartTypes[n % chartTypes.length];
+  for (let n = 0; n < 349; n++) {
+    const seed = n * 7919 + 1;
+    const r = seededRandom(seed);
+    const subject = subjects[n % subjects.length];
+    const ct = chartCycle[n % chartCycle.length];
     const cat1 = categories[n % categories.length];
     const cat2 = categories[(n + 7) % categories.length];
-    const desc = `A ${ct} comparing ${s} in ${p} with ${t} between ${cat1} and ${cat2}.`;
-    push(desc, "easy");
+    const p1 = periods[n % periods.length];
+    const p2 = periods[(n + 3) % periods.length];
+
+    let imageUrl, desc;
+
+    if (ct === "bar") {
+      const labels = [cat1, cat2, cat1 + " II", cat2 + " II", cat1 + " III"];
+      const values = labels.map(() => Math.floor(r() * 80 + 20));
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} by Category`;
+      imageUrl = svgDataUri(svgBarChart(seed, title, labels, values));
+      desc = `A bar chart showing ${subject} across five categories: ${labels.join(", ")}. ${cat1} has the highest value at ${Math.max(...values)}.`;
+    } else if (ct === "line") {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"];
+      const series = [1, 2].map(() => months.map(() => Math.floor(r() * 60 + 20)));
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Trend`;
+      imageUrl = svgDataUri(svgLineChart(seed, title, months, series));
+      desc = `A line graph showing ${subject} over eight months with two data series. One series shows an upward trend while the other fluctuates.`;
+    } else if (ct === "pie") {
+      const labels = [cat1, cat2, categories[(n+3)%12], categories[(n+9)%12], categories[(n+5)%12]];
+      const values = labels.map(() => Math.floor(r() * 30 + 10));
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Distribution`;
+      imageUrl = svgDataUri(svgPieChart(seed, title, labels, values));
+      desc = `A pie chart showing the distribution of ${subject} across five categories: ${labels.join(", ")}. The largest segment is ${labels[values.indexOf(Math.max(...values))]}.`;
+    } else if (ct === "table") {
+      const headers = ["Category", "Value", "Rank", "Change"];
+      const rows = [cat1, cat2, categories[(n+3)%12], categories[(n+9)%12], categories[(n+5)%12]].map((c, ri) => {
+        const v = Math.floor(r() * 100 + 10);
+        return [c, v.toString(), (ri+1).toString(), ((r() - 0.5) * 20).toFixed(1) + "%"];
+      });
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Summary Table`;
+      imageUrl = svgDataUri(svgTable(seed, title, headers, rows));
+      desc = `A table showing ${subject} with columns for Category, Value, Rank, and Change. ${cat1} ranks first with a value of ${rows[0][1]}.`;
+    } else if (ct === "map") {
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} by Region`;
+      imageUrl = svgDataUri(svgWorldMap(seed, title, regions));
+      desc = `A map showing ${subject} across five world regions: ${regions.join(", ")}. Each region is marked with a different color indicating varying levels.`;
+    } else {
+      const steps = stepSets[n % stepSets.length];
+      const title = `${subject.charAt(0).toUpperCase() + subject.slice(1)} Process`;
+      imageUrl = svgDataUri(svgProcessDiagram(seed, title, steps));
+      desc = `A process flowchart showing the ${subject} process with ${steps.length} stages: ${steps.join(", ")}. Arrows connect each step in sequence.`;
+    }
+
+    const ratio = i / 349;
+    const difficulty = ratio < 0.4 ? "easy" : ratio < 0.75 ? "medium" : "hard";
+    push(desc, difficulty, imageUrl);
   }
 
   return out;
