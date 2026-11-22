@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { 
   ChevronRight, 
   Play, 
@@ -8,14 +10,9 @@ import {
   FileText, 
   Crown,
   Star,
-  Home,
   Settings,
   HelpCircle,
   LogOut,
-  BookOpen,
-  Mic,
-  Headphones,
-  PenTool,
   ChevronLeft,
   Sparkles
 } from "lucide-react";
@@ -35,7 +32,6 @@ export default function MockTestList() {
   const { tier } = useCredits();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"full" | "section" | "question">("full");
-  const [testTypeTab, setTestTypeTab] = useState<"academic" | "core">("academic");
 
   const handleStartTest = (test: MockTestInfo) => {
     if (test.type === "premium" && tier === "free") {
@@ -130,266 +126,88 @@ export default function MockTestList() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="w-64 border-r bg-card/50 flex flex-col">
-        {/* Logo */}
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="PTE Practice" className="h-10 w-auto" />
-            <div>
-              <h1 className="font-bold text-lg text-foreground">PTE Practice</h1>
-              <p className="text-xs text-muted-foreground">Academic & UKVI</p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header */}
+          <header className="border-b bg-card/50 p-4">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="size-9 shrink-0 rounded-md" />
+              <h1 className="text-xl font-bold text-foreground">Mock Tests</h1>
             </div>
-          </div>
-        </div>
+          </header>
 
-        {/* User info */}
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-medium">
-              {user?.email?.[0]?.toUpperCase() || "U"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground truncate">
-                {user?.email?.split("@")[0] || "User"}
-              </p>
-              <Badge variant="secondary" className="text-xs capitalize">
-              {tier} Plan
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-1">
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-                onClick={() => navigate("/dashboard")}
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-                onClick={() => navigate("/dashboard")}
-              >
-                <BookOpen className="h-4 w-4" />
-                Study Centre
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="default" 
-                className="w-full justify-start gap-3"
-              >
-                <FileText className="h-4 w-4" />
-                Mock Tests
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              >
-                <Mic className="h-4 w-4" />
-                Speaking Practice
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              >
-                <PenTool className="h-4 w-4" />
-                Writing Practice
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              >
-                <BookOpen className="h-4 w-4" />
-                Reading Practice
-              </Button>
-            </li>
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              >
-                <Headphones className="h-4 w-4" />
-                Listening Practice
-              </Button>
-            </li>
-          </ul>
-
-          <div className="mt-8 pt-4 border-t">
-            <ul className="space-y-1">
-              <li>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+          {/* Tabs */}
+          <div className="flex-1 p-4 overflow-auto">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "full" | "section" | "question")}>
+              <TabsList className="w-full justify-start bg-transparent border-b rounded-none p-0 h-auto">
+                <TabsTrigger 
+                  value="full"
+                  className={cn(
+                    "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
+                    "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  )}
                 >
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Button>
-              </li>
-              <li>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+                  Full Tests
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="section"
+                  className={cn(
+                    "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
+                    "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  )}
                 >
-                  <Crown className="h-4 w-4 text-primary" />
-                  VIP Centre
-                </Button>
-              </li>
-              <li>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+                  Section Tests
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="question"
+                  className={cn(
+                    "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
+                    "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  )}
                 >
-                  <HelpCircle className="h-4 w-4" />
-                  Help (Q&A)
-                </Button>
-              </li>
-              <li>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Log Out
-                </Button>
-              </li>
-            </ul>
+                  Question Tests
+                </TabsTrigger>
+              </TabsList>
+
+              <ScrollArea className="flex-1 mt-4">
+                <TabsContent value="full" className="mt-0 space-y-3">
+                  {mockTestsList.map(renderTestItem)}
+                </TabsContent>
+
+                <TabsContent value="section" className="mt-0 space-y-3">
+                  {sectionTests.map(renderTestItem)}
+                </TabsContent>
+
+                <TabsContent value="question" className="mt-0 space-y-3">
+                  {questionTests.map(renderTestItem)}
+                </TabsContent>
+              </ScrollArea>
+            </Tabs>
           </div>
-        </nav>
-      </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
-        {/* Header */}
-        <header className="border-b bg-card/50 p-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate("/dashboard")}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-            <h1 className="text-xl font-bold text-foreground">Mock Tests</h1>
-          </div>
-        </header>
-
-        {/* Test Type Selector */}
-        <div className="p-4 border-b bg-card/30">
-          <div className="flex justify-center">
-            <div className="inline-flex rounded-full bg-muted p-1">
-              <Button
-                variant={testTypeTab === "academic" ? "default" : "ghost"}
-                size="sm"
-                className={cn(
-                  "rounded-full px-6",
-                  testTypeTab === "academic" && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setTestTypeTab("academic")}
-              >
-                PTE Academic / UKVI
-              </Button>
-              <Button
-                variant={testTypeTab === "core" ? "default" : "ghost"}
-                size="sm"
-                className={cn(
-                  "rounded-full px-6",
-                  testTypeTab === "core" && "bg-primary text-primary-foreground"
-                )}
-                onClick={() => setTestTypeTab("core")}
-              >
-                PTE Core
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="p-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="w-full justify-start bg-transparent border-b rounded-none p-0 h-auto">
-              <TabsTrigger 
-                value="full"
-                className={cn(
-                  "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
-                  "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                )}
-              >
-                Full Tests
-              </TabsTrigger>
-              <TabsTrigger 
-                value="section"
-                className={cn(
-                  "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
-                  "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                )}
-              >
-                Section Tests
-              </TabsTrigger>
-              <TabsTrigger 
-                value="question"
-                className={cn(
-                  "rounded-none border-b-2 border-transparent pb-3 pt-2 px-4",
-                  "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                )}
-              >
-                Question Tests
-              </TabsTrigger>
-            </TabsList>
-
-            <ScrollArea className="h-[calc(100vh-280px)] mt-4">
-              <TabsContent value="full" className="mt-0 space-y-3">
-                {mockTestsList.map(renderTestItem)}
-              </TabsContent>
-
-              <TabsContent value="section" className="mt-0 space-y-3">
-                {sectionTests.map(renderTestItem)}
-              </TabsContent>
-
-              <TabsContent value="question" className="mt-0 space-y-3">
-                {questionTests.map(renderTestItem)}
-              </TabsContent>
-            </ScrollArea>
-          </Tabs>
-        </div>
-
-        {/* Footer CTA */}
-        <div className="absolute bottom-0 left-64 right-0 p-4 border-t bg-card/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Star className="h-5 w-5 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">{tier === "free" ? "Unlock the full mock-test library" : `${tier.toUpperCase()} access is active`}</p>
-                <p className="text-sm text-muted-foreground">
-                  {tier === "free" ? "Pro and VIP packs unlock every mock test" : "Your pack includes unlimited mock tests"}
-                </p>
+          {/* Footer CTA */}
+          <div className="p-4 border-t bg-card/80 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Star className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">{tier === "free" ? "Unlock the full mock-test library" : `${tier.toUpperCase()} access is active`}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tier === "free" ? "Pro and VIP packs unlock every mock test" : "Your pack includes unlimited mock tests"}
+                  </p>
+                </div>
               </div>
+              <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => navigate("/billing")}>
+                <Crown className="h-4 w-4 mr-2" />
+                {tier === "free" ? "View Plans" : "Extend Access"}
+              </Button>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => navigate("/billing")}>
-              <Crown className="h-4 w-4 mr-2" />
-              {tier === "free" ? "View Plans" : "Extend Access"}
-            </Button>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
