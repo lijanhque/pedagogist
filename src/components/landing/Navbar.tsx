@@ -1,10 +1,20 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
 
 const sectionLinks = [
   { label: 'Features', href: '/#features' },
@@ -14,6 +24,16 @@ const sectionLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const closeMenu = () => setIsOpen(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    closeMenu();
+  };
+
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'U';
 
   return (
     <motion.nav
@@ -45,12 +65,40 @@ export function Navbar() {
 
           <div className="hidden shrink-0 items-center gap-2 md:flex">
             <ThemeToggle />
-            <Button variant="ghost" asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/auth?mode=signup">Get Started</Link>
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring" aria-label="User menu">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/auth?mode=signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           <button
@@ -82,12 +130,28 @@ export function Navbar() {
             </Link>
             <div className="mt-2 flex items-center gap-2 border-t border-border/60 pt-3">
               <ThemeToggle />
-              <Button variant="ghost" asChild className="flex-1" onClick={closeMenu}>
-                <Link to="/auth">Sign In</Link>
-              </Button>
-              <Button asChild className="flex-1" onClick={closeMenu}>
-                <Link to="/auth?mode=signup">Get Started</Link>
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="ghost" asChild className="flex-1" onClick={closeMenu}>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="flex-1" onClick={closeMenu}>
+                    <Link to="/profile">Profile</Link>
+                  </Button>
+                  <Button variant="ghost" className="flex-1" onClick={handleSignOut}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild className="flex-1" onClick={closeMenu}>
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                  <Button asChild className="flex-1" onClick={closeMenu}>
+                    <Link to="/auth?mode=signup">Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
